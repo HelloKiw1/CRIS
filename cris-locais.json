@@ -1,0 +1,174 @@
+{
+  "custom": [
+    {
+      "id": "1771615015842",
+      "type": "base",
+      "name": "Base dos Girassois",
+      "coords": [
+        -48.3336414895995,
+        -10.184402868138335
+      ],
+      "description": "Base dos Girassois",
+      "info": "Base dos Girassois",
+      "threat": 0
+    }
+  ],
+  "connections": [
+    {
+      "id": "conn-default-0",
+      "fromId": "default-1",
+      "toId": "default-7",
+      "color": "#4169E1",
+      "label": "Investigacao Ativa"
+    },
+    {
+      "id": "conn-default-1",
+      "fromId": "default-2",
+      "toId": "default-10",
+      "color": "#4169E1",
+      "label": "Caso em Andamento"
+    },
+    {
+      "id": "conn-default-2",
+      "fromId": "default-0",
+      "toId": "default-8",
+      "color": "#00FF00",
+      "label": "Monitoramento"
+    },
+    {
+      "id": "conn-default-3",
+      "fromId": "default-9",
+      "toId": "default-8",
+      "color": "#DC143C",
+      "label": "Possivel Relacao"
+    },
+    {
+      "id": "conn-default-4",
+      "fromId": "default-5",
+      "toId": "default-9",
+      "color": "#FFD700",
+      "label": "Fonte de Informacao"
+    },
+    {
+      "id": "conn-default-5",
+      "fromId": "default-3",
+      "toId": "default-15",
+      "color": "#00FF00",
+      "label": "Suporte Medico"
+    },
+    {
+      "id": "conn-default-6",
+      "fromId": "default-11",
+      "toId": "default-7",
+      "color": "#4169E1",
+      "label": "Investigacao Paranormal"
+    },
+    {
+      "id": "conn-default-7",
+      "fromId": "default-12",
+      "toId": "default-16",
+      "color": "#00FF00",
+      "label": "Apoio Operacional"
+    },
+    {
+      "id": "conn-default-8",
+      "fromId": "default-14",
+      "toId": "default-10",
+      "color": "#FFD700",
+      "label": "Contato Local"
+    },
+    {
+      "id": "conn-default-9",
+      "fromId": "default-6",
+      "toId": "default-8",
+      "color": "#FFD700",
+      "label": "Fornecimento Discreto"
+    },
+    {
+      "id": "conn-default-10",
+      "fromId": "default-13",
+      "toId": "default-12",
+      "color": "#00FF00",
+      "label": "Apoio Operacional"
+    }
+  ],
+  "zones": [
+    {
+      "id": "zona-perigo-extremo",
+      "name": "Zona de perigo extremo",
+      "coordinates": [
+        [
+          [
+            -48.32,
+            -10.195
+          ],
+          [
+            -48.3,
+            -10.195
+          ],
+          [
+            -48.3,
+            -10.21
+          ],
+          [
+            -48.32,
+            -10.21
+          ],
+          [
+            -48.32,
+            -10.195
+          ]
+        ]
+      ],
+      "fillColor": "#DC143C",
+      "fillOpacity": 0.15,
+      "lineColor": "#DC143C",
+      "lineWidth": 2,
+      "lineDasharray": [
+        4,
+        2
+      ]
+    },
+    {
+      "id": "zone-1771625454034",
+      "name": "UFT",
+      "coordinates": [
+        [
+          [
+            -48.35744651293646,
+            -10.180529094589815
+          ],
+          [
+            -48.358991465329126,
+            -10.18589348801656
+          ],
+          [
+            -48.35285457110291,
+            -10.187625280801072
+          ],
+          [
+            -48.35058005785794,
+            -10.1813316473756
+          ],
+          [
+            -48.35744651293646,
+            -10.18036013585079
+          ],
+          [
+            -48.35744651293646,
+            -10.180529094589815
+          ]
+        ]
+      ],
+      "fillColor": "#dc143c",
+      "fillOpacity": 0.15,
+      "lineColor": "#dc143c",
+      "lineWidth": 2,
+      "lineDasharray": [
+        4,
+        2
+      ]
+    }
+  ],
+  "timestamp": "2026-02-20T22:11:15.522Z"
+}

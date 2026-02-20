@@ -1,0 +1,244 @@
+{
+  "defaults": [
+    {
+      "type": "base",
+      "name": "Base da Ordo Realitas",
+      "coords": [-48.34577353930342, -10.183549216947497],
+      "description": "Sede regional da Ordem. Centro de operações e planejamento de missões.",
+      "info": "Acesso: Restrito | Segurança: Alta | Recursos: Armamento, Lab, Arquivo",
+      "threat": 0
+    },
+    {
+      "type": "casa",
+      "name": "Casa de Dante Silva",
+      "coords": [-48.355, -10.175],
+      "description": "Residência do agente veterano especialista em combate.",
+      "info": "Agente: Dante Silva | Especialidade: Combatente/Ocultista | NEX: 65%",
+      "threat": 0
+    },
+    {
+      "type": "casa",
+      "name": "Apartamento de Luna Costa",
+      "coords": [-48.335, -10.195],
+      "description": "Apartamento da agente especializada em investigação.",
+      "info": "Agente: Luna Costa | Especialidade: Especialista | NEX: 45%",
+      "threat": 0
+    },
+    {
+      "type": "casa",
+      "name": "Casa de Rafael Martins",
+      "coords": [-48.32, -10.185],
+      "description": "Casa do médico e agente de campo.",
+      "info": "Agente: Rafael Martins | Especialidade: Médico de Campo | NEX: 35%",
+      "threat": 0
+    },
+    {
+      "type": "loja",
+      "name": "Armeria & Tactical",
+      "coords": [-48.36, -10.17],
+      "description": "Loja de equipamentos táticos e armamento. Contato da Ordem.",
+      "info": "Contato: Jonas \"Pólvora\" | Desconto para Agentes: 15%",
+      "threat": 0
+    },
+    {
+      "type": "loja",
+      "name": "Antiquario Misterioso",
+      "coords": [-48.345, -10.165],
+      "description": "Loja de itens raros e ocultismo. Fonte de informações paranormais.",
+      "info": "Proprietária: Madame Celeste | Especialidade: Rituais e relíquias",
+      "threat": 0
+    },
+    {
+      "type": "loja",
+      "name": "Farmacia Sao Lucas",
+      "coords": [-48.33, -10.19],
+      "description": "Farmácia 24h. Fornece suprimentos médicos discretamente.",
+      "info": "Contato: Dr. Souza | Disponível: Remédios, primeiros socorros",
+      "threat": 0
+    },
+    {
+      "type": "paranormal",
+      "name": "Cemiterio Abandonado",
+      "coords": [-48.37, -10.19],
+      "description": "Antigo cemitério com relatos de aparições e fenômenos estranhos.",
+      "info": "⚠️ Perigo: MÉDIO | Elemento: Morte | Última ocorrência: 3 semanas",
+      "threat": 2
+    },
+    {
+      "type": "paranormal",
+      "name": "Hospital Psiquiatrico Desativado",
+      "coords": [-48.365, -10.205],
+      "description": "Hospital fechado nos anos 80. Forte atividade paranormal documentada.",
+      "info": "⚠️ Perigo: ALTO | Elemento: Conhecimento/Morte | Status: Monitorado",
+      "threat": 3
+    },
+    {
+      "type": "paranormal",
+      "name": "Mansao dos Corvos",
+      "coords": [-48.31, -10.2],
+      "description": "Mansão amaldiçoada. EXTREMO PERIGO. Entrada proibida sem autorização.",
+      "info": "🔴 Perigo: CRÍTICO | Elemento: Sangue/Morte | Mortes: 7 | CLASSE A",
+      "threat": 4
+    },
+    {
+      "type": "paranormal",
+      "name": "Escola Municipal Santos Dumont",
+      "coords": [-48.325, -10.175],
+      "description": "Escola com relatos recentes de atividade paranormal durante a noite.",
+      "info": "⚠️ Perigo: BAIXO | Elemento: Conhecimento | Status: Em investigação",
+      "threat": 1
+    },
+    {
+      "type": "paranormal",
+      "name": "Aguas Agitadas",
+      "coords": [-48.38, -10.185],
+      "description": "Abaixo da Ponte. Desaparecimentos frequentes na área.",
+      "info": "⚠️ Perigo: MÉDIO | Elemento: Sangue | Vítimas: 3 desaparecidos",
+      "threat": 3
+    },
+    {
+      "type": "base",
+      "name": "Base dos Girassois",
+      "coords": [-48.3336414895995, -10.184402868138335],
+      "description": "Base dos Girassois",
+      "info": "Base dos Girassois",
+      "threat": 0
+    },
+    {
+      "type": "paranormal",
+      "name": "Cemiterio Parque de Palmas",
+      "coords": [-48.3302, -10.1546],
+      "description": "Cemiterio no Plano Diretor Norte. Atividade incomum relatada.",
+      "info": "Nivel de alerta: Baixo | Observacao: patrulha noturna recomendada",
+      "threat": 1
+    },
+    {
+      "type": "base",
+      "name": "1a Delegacia de Policia Civil de Palmas",
+      "coords": [-48.324, -10.1685],
+      "description": "Delegacia principal no Plano Diretor Norte.",
+      "info": "Contato oficial para registros e suporte tatico",
+      "threat": 0
+    },
+    {
+      "type": "loja",
+      "name": "Hospital Geral de Palmas Dr. Francisco Ayres",
+      "coords": [-48.321, -10.197],
+      "description": "Hospital de referencia na regiao.",
+      "info": "Suporte medico e triagem de ocorrencias",
+      "threat": 0
+    },
+    {
+      "type": "paranormal",
+      "name": "Parque Estadual do Lajeado (entrada aproximada)",
+      "coords": [-48.197, -10.1],
+      "description": "Area de mata com relatos de presencas anormais.",
+      "info": "Acesso controlado | Missao de reconhecimento",
+      "threat": 2
+    },
+    {
+      "type": "base",
+      "name": "Corpo de Bombeiros Militar de Palmas (1a Companhia)",
+      "coords": [-48.3341, -10.1938],
+      "description": "Base de apoio emergencial.",
+      "info": "Resposta rapida para incidentes e isolamento",
+      "threat": 0
+    }
+  ],
+  "zones": [
+    {
+      "id": "zona-perigo-extremo",
+      "name": "Zona de perigo extremo",
+      "center": [-48.31, -10.2025],
+      "radiusMeters": 1500,
+      "coordinates": [[
+        [-48.31, -10.1865], [-48.3108, -10.1868], [-48.3116, -10.1875], [-48.3122, -10.1884], [-48.3126, -10.1895], [-48.3128, -10.1907], [-48.3128, -10.1919], [-48.3126, -10.1930], [-48.3122, -10.1940], [-48.3116, -10.1948], [-48.3108, -10.1954], [-48.3100, -10.1957], [-48.3091, -10.1957], [-48.3082, -10.1954], [-48.3074, -10.1948], [-48.3067, -10.1940], [-48.3062, -10.1930], [-48.3059, -10.1919], [-48.3058, -10.1907], [-48.3060, -10.1895], [-48.3064, -10.1884], [-48.3071, -10.1875], [-48.3079, -10.1868], [-48.3087, -10.1865], [-48.3095, -10.1865], [-48.3103, -10.1868], [-48.3111, -10.1875], [-48.3117, -10.1884], [-48.3121, -10.1895], [-48.3123, -10.1907], [-48.3123, -10.1919], [-48.3121, -10.1930], [-48.3117, -10.1940], [-48.3111, -10.1948], [-48.3103, -10.1954], [-48.3095, -10.1957], [-48.3086, -10.1957], [-48.3077, -10.1954], [-48.3069, -10.1948], [-48.3062, -10.1940], [-48.3057, -10.1930], [-48.3054, -10.1919], [-48.3053, -10.1907], [-48.3055, -10.1895], [-48.3059, -10.1884], [-48.3066, -10.1875], [-48.3074, -10.1868], [-48.3082, -10.1865], [-48.3090, -10.1865], [-48.3098, -10.1868], [-48.3106, -10.1875], [-48.3112, -10.1884], [-48.3116, -10.1895], [-48.3118, -10.1907], [-48.3118, -10.1919], [-48.3116, -10.1930], [-48.3112, -10.1940], [-48.3106, -10.1948], [-48.3098, -10.1954], [-48.3090, -10.1957], [-48.3081, -10.1957], [-48.3072, -10.1954], [-48.31, -10.1865]
+      ]],
+      "fillColor": "#DC143C",
+      "fillOpacity": 0.15,
+      "lineColor": "#DC143C",
+      "lineWidth": 2,
+      "lineDasharray": [4, 2]
+    }
+  ],
+  "connections": [
+    {
+      "id": "conn-default-0",
+      "fromId": "default-1",
+      "toId": "default-7",
+      "color": "#4169E1",
+      "label": "Investigacao Ativa"
+    },
+    {
+      "id": "conn-default-1",
+      "fromId": "default-2",
+      "toId": "default-10",
+      "color": "#4169E1",
+      "label": "Caso em Andamento"
+    },
+    {
+      "id": "conn-default-2",
+      "fromId": "default-0",
+      "toId": "default-8",
+      "color": "#00FF00",
+      "label": "Monitoramento"
+    },
+    {
+      "id": "conn-default-3",
+      "fromId": "default-9",
+      "toId": "default-8",
+      "color": "#DC143C",
+      "label": "Possivel Relacao"
+    },
+    {
+      "id": "conn-default-4",
+      "fromId": "default-5",
+      "toId": "default-9",
+      "color": "#FFD700",
+      "label": "Fonte de Informacao"
+    },
+    {
+      "id": "conn-default-5",
+      "fromId": "default-3",
+      "toId": "default-15",
+      "color": "#00FF00",
+      "label": "Suporte Medico"
+    },
+    {
+      "id": "conn-default-6",
+      "fromId": "default-11",
+      "toId": "default-7",
+      "color": "#4169E1",
+      "label": "Investigacao Paranormal"
+    },
+    {
+      "id": "conn-default-7",
+      "fromId": "default-12",
+      "toId": "default-16",
+      "color": "#00FF00",
+      "label": "Apoio Operacional"
+    },
+    {
+      "id": "conn-default-8",
+      "fromId": "default-14",
+      "toId": "default-10",
+      "color": "#FFD700",
+      "label": "Contato Local"
+    },
+    {
+      "id": "conn-default-9",
+      "fromId": "default-6",
+      "toId": "default-8",
+      "color": "#FFD700",
+      "label": "Fornecimento Discreto"
+    },
+    {
+      "id": "conn-default-10",
+      "fromId": "default-13",
+      "toId": "default-12",
+      "color": "#00FF00",
+      "label": "Apoio Operacional"
+    }
+  ],
+  "timestamp": "2026-02-20T20:02:15.232Z"
+}
