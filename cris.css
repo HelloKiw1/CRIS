@@ -55,14 +55,13 @@ body::before {
 .marker {
     transition: all 0.2s ease;
     animation: markerAppear 0.8s ease-out;
-    filter: drop-shadow(0 0 4px rgba(0, 255, 0, 0.8));
 }
+
 
 @keyframes markerAppear {
     0% {
         opacity: 0;
         transform: scale(0) translateY(-50px);
-        filter: blur(10px);
     }
     60% {
         transform: scale(1.2) translateY(5px);
@@ -70,7 +69,6 @@ body::before {
     100% {
         opacity: 1;
         transform: scale(1) translateY(0);
-        filter: blur(0);
     }
 }
 
@@ -95,6 +93,12 @@ body::before {
     animation: popupAppear 0.4s ease-out;
     letter-spacing: 1px;
     text-transform: uppercase;
+    z-index: 1000 !important;
+}
+
+/* Garantir que o container do popup também tenha z-index alto */
+.maplibregl-popup {
+    z-index: 1000 !important;
 }
 
 @keyframes popupAppear {

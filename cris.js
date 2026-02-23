@@ -104,15 +104,36 @@ const markerStyles = {
     'paranormal': { color: '#FF6347', scale: 1.1 }
 };
 
-const markerIcons = {
-    base: '🏢',
-    casa: '🏠',
-    loja: '💼',
-    paranormal: '⚠️'
-};
+// ===== CACHE DE IMAGENS VÁLIDAS =====
+const imageCache = {};
 
-function getMarkerIcon(type) {
-    return markerIcons[type] || '📍';
+async function preloadPinImages() {
+    const iconMap = {
+        'base': 'media/icons/pin/icon_base.png',
+        'casa': 'media/icons/pin/icon_casa.png',
+        'loja': 'media/icons/pin/icon_Loja.png',
+        'paranormal': 'media/icons/pin/Icon_paranormal.png'
+    };
+
+    for (const [type, path] of Object.entries(iconMap)) {
+        try {
+            const response = await fetch(path, { method: 'HEAD' });
+            imageCache[type] = response.ok ? path : null;
+        } catch (error) {
+            imageCache[type] = null;
+        }
+    }
+}
+
+// ===== CRIAR PIN COM IMAGEM DE CATEGORIA =====
+function createPinImage(type) {
+    const validPath = imageCache[type];
+    
+    if (!validPath) {
+        return ''; // Sem fallback - usa apenas a imagem da categoria
+    }
+    
+    return `<img src="${validPath}" alt="${type}" style="width: 100%; height: 100%; object-fit: contain;">`;
 }
 
 function normalizeLocation(location) {
@@ -671,20 +692,33 @@ function buildPopupHtml(location) {
 function createMarker(location) {
     const style = markerStyles[location.type] || { color: '#00FF00', scale: 1.0 };
     
-    // Criar elemento customizado do marcador
+    // Criar elemento customizado do marcador com imagem de categoria
     const el = document.createElement('div');
-    el.className = 'marker';
-    el.innerHTML = getMarkerIcon(location.type);
-    el.style.fontSize = `${24 * style.scale}px`;
+    el.className = `marker marker-${location.type}`;
+    el.style.width = `${32 * style.scale}px`;
+    el.style.height = `${40 * style.scale}px`;
     el.style.cursor = 'pointer';
-    el.style.filter = 'drop-shadow(0 0 8px rgba(0,0,0,0.8))';
+    el.style.filter = `drop-shadow(0 0 8px ${style.color})`;
+    el.style.zIndex = '1';
+    el.style.pointerEvents = 'auto';
+    el.style.display = 'flex';
+    el.style.alignItems = 'center';
+    el.style.justifyContent = 'center';
+    
+    // Adicionar a imagem
+    const imgHtml = createPinImage(location.type);
+    if (imgHtml) {
+        el.innerHTML = imgHtml;
+    } else {
+        return null;
+    }
     
     // Criar popup com informações
     const popup = new maplibregl.Popup({ offset: 25 })
         .setHTML(buildPopupHtml(location));
     
-    // Adicionar marcador ao mapa
-    const marker = new maplibregl.Marker(el)
+    // Adicionar marcador ao mapa COM ELEMENTO CUSTOMIZADO
+    const marker = new maplibregl.Marker({ element: el })
         .setLngLat(location.coords)
         .setPopup(popup)
         .addTo(map);
@@ -692,15 +726,17 @@ function createMarker(location) {
     // Efeito hover
     el.addEventListener('mouseenter', () => {
         if (!hoverFilter) {
-            el.style.transform = 'scale(1.2)';
+            el.style.width = `${32 * style.scale * 1.2}px`;
+            el.style.height = `${40 * style.scale * 1.2}px`;
             el.style.filter = `drop-shadow(0 0 12px ${style.color})`;
         }
     });
     
     el.addEventListener('mouseleave', () => {
         if (!hoverFilter) {
-            el.style.transform = 'scale(1)';
-            el.style.filter = 'drop-shadow(0 0 8px rgba(0,0,0,0.8))';
+            el.style.width = `${32 * style.scale}px`;
+            el.style.height = `${40 * style.scale}px`;
+            el.style.filter = `drop-shadow(0 0 8px ${style.color})`;
         }
     });
     
@@ -725,6 +761,10 @@ function saveLocations() {
     localStorage.setItem(locationsStorageKey, JSON.stringify(locations));
 }
 
+function saveCustomLocations() {
+    localStorage.setItem('paranormalLocations', JSON.stringify(customLocations));
+}
+
 // ===== DELETAR LOCAL =====
 function deleteLocation(id) {
     locations = locations.filter(loc => loc.id !== id);
@@ -737,6 +777,7 @@ function deleteLocation(id) {
         allMarkers = allMarkers.filter(m => m.id !== id);
     }
     saveLocations();
+    saveCustomLocations();
     refreshConnectionOptions();
     renderConnectionList();
     renderZonesList();
@@ -747,6 +788,9 @@ function deleteLocation(id) {
 
 // ===== ADICIONAR MARCADORES AO MAPA =====
 map.on('load', async function() {
+    // Precarregar e validar imagens de pins
+    await preloadPinImages();
+    
     await loadLocationsFromJson();
 
     // Adicionar locais padrão
@@ -802,16 +846,16 @@ legend.innerHTML = `
     <div class="legend-content">
         <div class="legend-section">
             <div class="legend-title">UNIDADES ORDO REALITAS</div>
-            <div class="legend-item legend-filter" data-filter="base"><span style="color: #00FF00">🏢</span> Bases</div>
-            <div class="legend-item legend-filter" data-filter="casa"><span style="color: #4169E1">🏠</span> Casas</div>
+            <div class="legend-item legend-filter" data-filter="base"><img src="media/icons/pin/icon_base.png" alt="base" style="width: 20px; height: 25px; object-fit: contain; margin-right: 6px; vertical-align: middle;"> Bases</div>
+            <div class="legend-item legend-filter" data-filter="casa"><img src="media/icons/pin/icon_casa.png" alt="casa" style="width: 20px; height: 25px; object-fit: contain; margin-right: 6px; vertical-align: middle;"> Casas</div>
         </div>
         <div class="legend-section">
             <div class="legend-title">PONTOS DE SUPORTE</div>
-            <div class="legend-item legend-filter" data-filter="loja"><span style="color: #FFD700">💼</span> Lojas/Contatos</div>
+            <div class="legend-item legend-filter" data-filter="loja"><img src="media/icons/pin/icon_Loja.png" alt="loja" style="width: 20px; height: 25px; object-fit: contain; margin-right: 6px; vertical-align: middle;"> Lojas/Contatos</div>
         </div>
         <div class="legend-section">
             <div class="legend-title">REGISTRO DO PARANORMAL</div>
-            <div class="legend-item legend-filter" data-filter="paranormal"><span style="color: #FF6347">⚠️</span> Manifestacoes</div>
+            <div class="legend-item legend-filter" data-filter="paranormal"><img src="media/icons/pin/Icon_paranormal.png" alt="paranormal" style="width: 20px; height: 25px; object-fit: contain; margin-right: 6px; vertical-align: middle;"> Manifestacoes</div>
         </div>
         <div class="legend-section">
             <div class="legend-title">TIPOS DE CONEXÃO</div>
@@ -1058,35 +1102,29 @@ function applyFilters() {
         if (markerData.isVisible) {
             if (isHovering && isMatch) {
                 // HIGHLIGHT
-                markerData.element.style.cssText = `
-                    opacity: 1 !important;
-                    filter: drop-shadow(0 0 25px rgba(255, 255, 0, 1)) drop-shadow(0 0 45px rgba(255, 200, 0, 0.8)) !important;
-                    transform: scale(1.3) !important;
-                    transition: all 0.2s ease !important;
-                    font-size: ${24 * (markerStyles[markerData.type]?.scale || 1)}px !important;
-                    cursor: pointer !important;
-                `;
+                const highlightStyle = markerStyles[markerData.type] || { color: '#00FF00', scale: 1.0 };
+                const baseWidth = 32 * highlightStyle.scale;
+                const baseHeight = 40 * highlightStyle.scale;
+                markerData.element.style.width = `${baseWidth * 1.3}px`;
+                markerData.element.style.height = `${baseHeight * 1.3}px`;
+                markerData.element.style.opacity = '1';
+                markerData.element.style.filter = `drop-shadow(0 0 25px ${highlightStyle.color}) drop-shadow(0 0 45px ${highlightStyle.color})`;
             } else if (isHovering && !isMatch) {
                 // DIM
-                markerData.element.style.cssText = `
-                    opacity: 0.15 !important;
-                    filter: grayscale(1) drop-shadow(0 0 2px rgba(0,0,0,0.3)) !important;
-                    transform: scale(0.8) !important;
-                    transition: all 0.2s ease !important;
-                    font-size: ${24 * (markerStyles[markerData.type]?.scale || 1)}px !important;
-                    cursor: pointer !important;
-                `;
+                const dimStyle = markerStyles[markerData.type] || { color: '#00FF00', scale: 1.0 };
+                const baseWidth = 32 * dimStyle.scale;
+                const baseHeight = 40 * dimStyle.scale;
+                markerData.element.style.width = `${baseWidth * 0.8}px`;
+                markerData.element.style.height = `${baseHeight * 0.8}px`;
+                markerData.element.style.opacity = '0.15';
+                markerData.element.style.filter = `grayscale(1) drop-shadow(0 0 2px ${dimStyle.color})`;
             } else {
                 // RESTAURAR PADRÃO
                 const style = markerStyles[markerData.type] || { color: '#00FF00', scale: 1.0 };
-                markerData.element.style.cssText = `
-                    font-size: ${24 * style.scale}px !important;
-                    cursor: pointer !important;
-                    filter: drop-shadow(0 0 8px rgba(0,0,0,0.8)) !important;
-                    opacity: 1 !important;
-                    transform: scale(1) !important;
-                    transition: all 0.2s ease !important;
-                `;
+                markerData.element.style.width = `${32 * style.scale}px`;
+                markerData.element.style.height = `${40 * style.scale}px`;
+                markerData.element.style.opacity = '1';
+                markerData.element.style.filter = `drop-shadow(0 0 8px ${style.color})`;
             }
         }
     });
@@ -1548,7 +1586,7 @@ function applyImportedData(data) {
             }
             return normalizeLocation({ ...loc });
         });
-        saveLocations();
+        saveCustomLocations();
     }
 
     if (Array.isArray(data.connections)) {
@@ -1671,9 +1709,9 @@ function closeModal() {
 }
 
 function stripLeadingIcon(fullName) {
-    const icons = Object.values(markerIcons);
-    const match = icons.find(icon => fullName.startsWith(`${icon} `));
-    return match ? fullName.slice(match.length + 1) : fullName;
+    // Remove ícones emoji no início do nome (ex: "🏢 Base Principal" -> "Base Principal")
+    const emojiRegex = /^[\p{Emoji}]\s+/u;
+    return fullName.replace(emojiRegex, '');
 }
 
 function setModalMode(isEdit) {
@@ -1807,10 +1845,23 @@ document.getElementById('location-form').addEventListener('submit', (e) => {
             threat: threatValue
         };
 
-        const locationIndex = locations.findIndex(loc => loc.id === editingLocationId);
-        if (locationIndex !== -1) {
-            locations[locationIndex] = updatedLocation;
-            saveLocations();
+        const customIndex = customLocations.findIndex(loc => loc.id === editingLocationId);
+        if (customIndex !== -1) {
+            customLocations[customIndex] = updatedLocation;
+            saveCustomLocations();
+        } else {
+            const locationIndex = locations.findIndex(loc => loc.id === editingLocationId);
+            if (locationIndex !== -1) {
+                locations[locationIndex] = updatedLocation;
+                defaultEdits[editingLocationId] = {
+                    type: updatedLocation.type,
+                    name: updatedLocation.name,
+                    description: updatedLocation.description,
+                    info: updatedLocation.info,
+                    threat: updatedLocation.threat
+                };
+                saveDefaultEdits(defaultEdits);
+            }
         }
 
         markerData.marker.remove();
@@ -1834,8 +1885,8 @@ document.getElementById('location-form').addEventListener('submit', (e) => {
         threat: threatValue
     };
     
-    locations.push(newLocation);
-    saveLocations();
+    customLocations.push(newLocation);
+    saveCustomLocations();
     createMarker(newLocation);
     refreshConnectionOptions();
     
