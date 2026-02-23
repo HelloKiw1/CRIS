@@ -29,6 +29,7 @@ let activeFilters = {
 };
 let hoverFilter = null;
 let showConnections = true;
+let showMembranes = true;
 let editingLocationId = null;
 let editingZoneId = null;
 let drawingZone = false;
@@ -43,6 +44,9 @@ let defaultEdits = loadDefaultEdits();
 let showDefaultFileLocations = true;
 let defaultFileLocationIds = new Set();
 let renderedZoneIds = new Set();
+let membraneImageLoaded = false;
+let membraneImage = null;
+let membranePatternRegistered = false;
 
 // ===== LOCAIS DE INVESTIGAÇÃO =====
 let locations = [];
@@ -96,6 +100,57 @@ function clearZonesStorage() {
     localStorage.removeItem(zonesStorageKey);
 }
 
+// ===== FUNÇÕES DE DEBUG =====
+window.debugCRIS = {
+    // Diagnostica o estado completo da aplicação
+    diagnosticar: function() {
+        console.log('=== 🔍 DIAGNÓSTICO DO CRIS ===');
+        console.log('📌 Locais carregados:', locations.length);
+        console.log('📌 Locais customizados:', customLocations.length);
+        console.log('📍 Zonas carregadas:', zonesFromFile.length);
+        console.log('🔗 Conexões:', connections.length);
+        console.log('🖼️  Padrões de membrana registrados:', membranePatternRegistered);
+        
+        console.log('\n📍 ZONAS DETALHES:');
+        zonesFromFile.forEach(z => {
+            console.log(`   ID: ${z.id}`);
+            console.log(`   Nome: ${z.name}`);
+            console.log(`   Estado: ${z.membraneState}`);
+            console.log(`   Padrão: ${z.fillPattern}`);
+            console.log(`   Coordenadas: ${z.coordinates ? z.coordinates[0].length + ' pontos' : 'nenhuma'}`);
+            console.log('');
+        });
+        
+        // Verificar padrões registrados
+        console.log('\n🖼️ PADRÕES REGISTRADOS:');
+        Object.keys(membraneStates).forEach(state => {
+            const pattern = membraneStates[state].pattern;
+            const exists = map.hasImage(pattern);
+            console.log(`   ${pattern}: ${exists ? '✓' : '✗'}`);
+        });
+    },
+    
+    // Limpa LocalStorage e recarrega
+    limparCache: function() {
+        console.log('🧹 Limpando cache...');
+        localStorage.removeItem('crisLocations');
+        localStorage.removeItem('crisZones');
+        localStorage.removeItem('crisDefaultEdits');
+        localStorage.removeItem('paranormalLocations');
+        console.log('✓ Cache limpo. Recarregando página...');
+        location.reload();
+    },
+    
+    // Mostra o que está armazenado no LocalStorage
+    mostraLocalStorage: function() {
+        console.log('=== 💾 LOCAL STORAGE ===');
+        console.log('crisLocations:', localStorage.getItem('crisLocations'));
+        console.log('crisZones:', localStorage.getItem('crisZones'));
+        console.log('crisDefaultEdits:', localStorage.getItem('crisDefaultEdits'));
+        console.log('paranormalLocations:', localStorage.getItem('paranormalLocations'));
+    }
+};
+
 // ===== ESTILOS DOS MARCADORES =====
 const markerStyles = {
     'base': { color: '#00FF00', scale: 1.2 },
@@ -103,6 +158,276 @@ const markerStyles = {
     'loja': { color: '#FFD700', scale: 1.0 },
     'paranormal': { color: '#FF6347', scale: 1.1 }
 };
+
+// ===== ESTADOS DA MEMBRANA =====
+const membraneBaseColor = '#ffffff';
+const membraneStates = {
+    intacta: {
+        label: 'Intacta',
+        fillOpacity: 0.15,
+        lineWidth: 1.5,
+        lineDasharray: null,
+        pattern: 'membrane-texture-intacta'
+    },
+    estavel: {
+        label: 'Estavel',
+        fillOpacity: 0.25,
+        lineWidth: 2,
+        lineDasharray: [6, 2],
+        pattern: 'membrane-texture-estavel'
+    },
+    danificada: {
+        label: 'Danificada',
+        fillOpacity: 0.40,
+        lineWidth: 2.5,
+        lineDasharray: [4, 3],
+        pattern: 'membrane-texture-danificada'
+    },
+    arruinada: {
+        label: 'Arruinada',
+        fillOpacity: 0.60,
+        lineWidth: 3,
+        lineDasharray: [2, 2],
+        pattern: 'membrane-texture-arruinada'
+    },
+    rompida: {
+        label: 'Rompida',
+        fillOpacity: 0.85,
+        lineWidth: 3.5,
+        lineDasharray: [1, 2],
+        pattern: 'membrane-texture-rompida'
+    }
+};
+
+function normalizeMembraneState(value) {
+    if (!value) {
+        return 'estavel';
+    }
+    const normalized = String(value)
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim();
+    return membraneStates[normalized] ? normalized : 'estavel';
+}
+
+function getMembraneStyle(stateKey) {
+    return membraneStates[stateKey] || membraneStates.estavel;
+}
+
+// Função para carregar a imagem de membrana
+function preloadMembraneImage() {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = function() {
+            membraneImage = img;
+            membraneImageLoaded = true;
+            console.log('✓ Imagem de membrana carregada com sucesso (', img.width, 'x', img.height, ')');
+            resolve(true);
+        };
+        img.onerror = function(error) {
+            console.error('✗ Erro ao carregar imagem de membrana:', error);
+            membraneImageLoaded = false;
+            resolve(false);
+        };
+        console.log('Iniciando carregamento de media/textura/membrana.png...');
+        img.src = 'media/textura/membrana.png';
+    });
+}
+
+function buildMembranePatternCanvas(stateKey) {
+    const size = 32;  // Ainda menor para garantir compatibilidade
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) {
+        console.error(`[${stateKey}] Não foi possível obter contexto 2D do canvas`);
+        return null;
+    }
+    
+    ctx.fillStyle = 'rgba(0, 0, 0, 0)';
+    ctx.clearRect(0, 0, size, size);
+
+    // Se a imagem foi carregada, desenhar ela
+    if (membraneImageLoaded && membraneImage) {
+        console.log(`[${stateKey}] Usando imagem membrana.png carregada`);
+        
+        let globalOpacity = 0.5;
+        if (stateKey === 'intacta') globalOpacity = 0.15;
+        else if (stateKey === 'estavel') globalOpacity = 0.25;
+        else if (stateKey === 'danificada') globalOpacity = 0.40;
+        else if (stateKey === 'arruinada') globalOpacity = 0.60;
+        else if (stateKey === 'rompida') globalOpacity = 0.85;
+        
+        try {
+            ctx.globalAlpha = globalOpacity;
+            ctx.drawImage(membraneImage, 0, 0, size, size);
+            ctx.globalAlpha = 1.0;
+        } catch (error) {
+            console.warn(`[${stateKey}] Erro ao desenhar imagem, usando fallback:`, error);
+        }
+        
+        return canvas;
+    }
+    
+    // Fallback: Gerar nebulosa rosa proceduralmente (se membrana.png não carregar)
+    console.warn(`[${stateKey}] Gerando nebulosa rosa proceduralmente`);
+    
+    let particleCount = 50;
+    let opacity = 0.5;
+    
+    if (stateKey === 'intacta') {
+        particleCount = 8;
+        opacity = 0.15;
+    } else if (stateKey === 'estavel') {
+        particleCount = 12;
+        opacity = 0.25;
+    } else if (stateKey === 'danificada') {
+        particleCount = 16;
+        opacity = 0.40;
+    } else if (stateKey === 'arruinada') {
+        particleCount = 24;
+        opacity = 0.60;
+    } else if (stateKey === 'rompida') {
+        particleCount = 32;
+        opacity = 0.85;
+    }
+    
+    // Cores rosa/avermelhada (como a imagem desejada)
+    const baseHues = [
+        'rgba(255, 200, 220, 0.3)',  // Rosa claro
+        'rgba(255, 150, 180, 0.25)', // Rosa médio
+        'rgba(255, 100, 150, 0.2)',  // Rosa escuro
+        'rgba(240, 80, 120, 0.2)',   // Vermelho-rosa
+        'rgba(255, 180, 200, 0.3)'   // Rosa pálido
+    ];
+    
+    // Seed pseudo-aleatória
+    const seed = stateKey.charCodeAt(0);
+    let random = seed;
+    
+    function seededRandom() {
+        random = (random * 9301 + 49297) % 233280;
+        return random / 233280;
+    }
+    
+    // Desenhar múltiplas camadas de círculos com padrão nebuloso
+    for (let layer = 0; layer < 3; layer++) {  // Reduzido de 4 para 3 camadas
+        const layerParticles = Math.floor(particleCount * (1 - layer * 0.2));
+        
+        for (let i = 0; i < layerParticles; i++) {
+            const x = seededRandom() * size;
+            const y = seededRandom() * size;
+            const radius = 3 + seededRandom() * 8 + layer * 1.5;  // Reduzido substancialmente
+            const hueIndex = Math.floor(seededRandom() * baseHues.length);
+            
+            // Criar gradiente radial rosa
+            const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+            gradient.addColorStop(0, baseHues[hueIndex]);
+            gradient.addColorStop(0.5, baseHues[hueIndex].replace('0.', '0.1'));
+            gradient.addColorStop(1, 'rgba(255, 200, 220, 0)');
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+    
+    // Aplicar opacidade global ao todo
+    ctx.globalAlpha = opacity;
+    ctx.fillStyle = 'rgba(255, 200, 220, 0.1)';
+    ctx.fillRect(0, 0, size, size);
+    ctx.globalAlpha = 1.0;
+
+    return canvas;
+}
+
+function registerMembranePatterns() {
+    // Evitar registrar múltiplas vezes
+    if (membranePatternRegistered) {
+        console.log('✓ Padrões de membrana já registrados');
+        return;
+    }
+    
+    console.log('🎨 Registrando padrões de membrana (5 padrões únicos)...');
+    let successCount = 0;
+    let errorCount = 0;
+    
+    Object.keys(membraneStates).forEach((stateKey) => {
+        const patternName = membraneStates[stateKey].pattern;
+        
+        // Verificar se já existe
+        if (map.hasImage(patternName)) {
+            console.log(`   ⚠️  Padrão "${patternName}" já existe, pulando...`);
+            return;
+        }
+        
+        try {
+            const canvas = buildMembranePatternCanvas(stateKey);
+            
+            if (!canvas) {
+                console.error(`   ✗ Canvas nulo para ${stateKey}`);
+                errorCount++;
+                return;
+            }
+            
+            console.log(`   [${stateKey}] Canvas: ${canvas.width}x${canvas.height}`);
+            
+            map.addImage(patternName, canvas, { 
+                pixelRatio: 1,
+                sdf: false
+            });
+            
+            // Verificar se foi realmente registrado
+            if (map.hasImage(patternName)) {
+                console.log(`   ✓ Padrão registrado: ${patternName}`);
+                successCount++;
+            } else {
+                console.warn(`   ⚠️  Padrão ${patternName} não foi registrado corretamente`);
+                errorCount++;
+            }
+        } catch (error) {
+            console.error(`   ✗ Erro ao registrar ${patternName}:`, error.message);
+            errorCount++;
+        }
+    });
+    
+    membranePatternRegistered = true;
+    console.log(`✓ Registro concluído: ${successCount} sucesso, ${errorCount} erro(s)`);
+}
+
+function setMembraneVisibility(isVisible) {
+    showMembranes = isVisible;
+    renderedZoneIds.forEach((zoneId) => {
+        const fillId = `${zoneId}-fill`;
+        const borderId = `${zoneId}-border`;
+        if (map.getLayer(fillId)) {
+            map.setLayoutProperty(fillId, 'visibility', isVisible ? 'visible' : 'none');
+        }
+        if (map.getLayer(borderId)) {
+            map.setLayoutProperty(borderId, 'visibility', isVisible ? 'visible' : 'none');
+        }
+    });
+}
+
+function getMembraneStateFromForm() {
+    const select = document.getElementById('zone-state');
+    return normalizeMembraneState(select ? select.value : 'estavel');
+}
+
+function updateMembraneStyleSummary(stateKey) {
+    const summary = document.getElementById('zone-style-summary');
+    if (!summary) {
+        return;
+    }
+    const style = getMembraneStyle(stateKey);
+    const dashLabel = style.lineDasharray ? style.lineDasharray.join(',') : 'solido';
+    summary.textContent = `Estilo: borda ${style.lineWidth}px, opacidade ${style.fillOpacity}, tracejado ${dashLabel}`;
+}
 
 // ===== CACHE DE IMAGENS VÁLIDAS =====
 const imageCache = {};
@@ -159,18 +484,23 @@ function normalizeZone(zone, index) {
     if (zone.center && zone.radiusMeters) {
         coordinates = createCirclePolygon(zone.center, zone.radiusMeters);
     }
+
+    const membraneState = normalizeMembraneState(zone.membraneState);
+    const membraneStyle = getMembraneStyle(membraneState);
     
     return {
         id: zone.id || `zone-${index}`,
-        name: zone.name || 'Zona de perigo',
+        name: zone.name || 'Ponto de membrana',
+        membraneState: membraneState,
         coordinates: coordinates,
         center: zone.center,
         radiusMeters: zone.radiusMeters,
-        fillColor: zone.fillColor || '#DC143C',
-        fillOpacity: typeof zone.fillOpacity === 'number' ? zone.fillOpacity : 0.15,
-        lineColor: zone.lineColor || zone.fillColor || '#DC143C',
-        lineWidth: typeof zone.lineWidth === 'number' ? zone.lineWidth : 2,
-        lineDasharray: Array.isArray(zone.lineDasharray) ? zone.lineDasharray : [4, 2]
+        fillColor: membraneBaseColor,
+        fillOpacity: membraneStyle.fillOpacity,
+        fillPattern: membraneStyle.pattern,
+        lineColor: membraneBaseColor,
+        lineWidth: membraneStyle.lineWidth,
+        lineDasharray: membraneStyle.lineDasharray ? [...membraneStyle.lineDasharray] : null
     };
 }
 
@@ -182,6 +512,8 @@ function cloneZone(zone) {
             : zone.coordinates,
         center: zone.center ? [...zone.center] : zone.center,
         radiusMeters: zone.radiusMeters,
+        membraneState: zone.membraneState,
+        fillPattern: zone.fillPattern,
         lineDasharray: Array.isArray(zone.lineDasharray) ? [...zone.lineDasharray] : zone.lineDasharray
     };
 }
@@ -212,6 +544,9 @@ async function loadLocationsFromJson() {
         const extraDefaults = Array.isArray(data.defaults)
             ? data.defaults
             : [];
+        
+        console.log('📌 Locais padrão de CRIS-locaisdefault.json:', defaultLocations.length);
+        console.log('📌 Locais extras de CRIS-locais.json:', extraDefaults.length);
 
         defaultLocationsFromFile = defaultLocations.map(loc => normalizeLocation({ ...loc }));
         defaultLocationsFromFile.forEach((loc, index) => {
@@ -264,6 +599,8 @@ async function loadLocationsFromJson() {
                 label: conn.label || 'Conexao'
             }))
             : [];
+        
+        console.log('🔗 Conexões padrão:', defaultConnections.length);
 
         if (Array.isArray(data.connections) && data.connections.length > 0) {
             connections = data.connections.map((conn, index) => ({
@@ -273,18 +610,32 @@ async function loadLocationsFromJson() {
                 color: conn.color || '#00FF00',
                 label: conn.label || 'Conexao'
             }));
+            console.log('🔗 Conexões customizadas carregadas:', connections.length);
         } else {
             connections = [...defaultConnections];
+            console.log('🔗 Usando conexões padrão');
         }
 
         defaultZonesFromFile = Array.isArray(defaultData.zones)
             ? defaultData.zones.map((zone, index) => normalizeZone(zone, index))
             : [];
+        
+        console.log('📍 Zonas carregadas de CRIS-locaisdefault.json:', defaultZonesFromFile.length);
+        defaultZonesFromFile.forEach(zone => {
+            console.log(`   - ${zone.id}: ${zone.name} (${zone.membraneState})`);
+        });
 
         const storedZones = loadZonesFromStorage();
+        console.log('💾 Zonas armazenadas em LocalStorage:', storedZones ? storedZones.length : 0);
+        
         zonesFromFile = storedZones
             ? storedZones.map((zone) => cloneZone(zone))
             : defaultZonesFromFile.map((zone) => cloneZone(zone));
+        
+        console.log('✓ Zonas finais carregadas:', zonesFromFile.length);
+        zonesFromFile.forEach(zone => {
+            console.log(`   - ${zone.id}: ${zone.name} (${zone.membraneState})`);
+        });
     } catch (error) {
         locations = [];
         customLocations = [];
@@ -316,8 +667,11 @@ function clearZonesFromMap() {
 }
 
 function addZonesToMap() {
+    console.log(`Adicionando ${zonesFromFile.length} zonas ao mapa`);
+    
     zonesFromFile.forEach((zone) => {
         if (!Array.isArray(zone.coordinates)) {
+            console.warn(`Zona ${zone.id} sem coordenadas válidas`);
             return;
         }
 
@@ -326,6 +680,7 @@ function addZonesToMap() {
         const borderId = `${zone.id}-border`;
 
         if (map.getSource(sourceId)) {
+            console.log(`Zona ${zone.id} já existe no mapa`);
             return;
         }
 
@@ -344,29 +699,59 @@ function addZonesToMap() {
             }
         });
 
+        const style = getMembraneStyle(normalizeMembraneState(zone.membraneState));
+        const fillPaint = {
+            'fill-color': zone.fillColor || membraneBaseColor,
+            'fill-opacity': zone.fillOpacity
+        };
+        const fillPattern = zone.fillPattern || style.pattern;
+        
+        console.log(`Zona ${zone.id}: tentando usar padrão "${fillPattern}", existe? ${map.hasImage(fillPattern)}`);
+        
+        // Se o padrão existe, usar fill-pattern
+        if (map.hasImage(fillPattern)) {
+            fillPaint['fill-pattern'] = fillPattern;
+            console.log(`✓ Zona ${zone.id} usando padrão`);
+        } else {
+            // Fallback: usar apenas fill-color com opacity aumentada
+            console.warn(`⚠️  Padrão "${fillPattern}" não encontrado para zona ${zone.id}, usando fallback de cor`);
+            // Aumentar a opacidade já que não há padrão
+            fillPaint['fill-opacity'] = Math.min(zone.fillOpacity * 1.5, 0.8);
+        }
+
         map.addLayer({
             'id': fillId,
             'type': 'fill',
             'source': sourceId,
-            'paint': {
-                'fill-color': zone.fillColor,
-                'fill-opacity': zone.fillOpacity
+            'paint': fillPaint,
+            'layout': {
+                'visibility': showMembranes ? 'visible' : 'none'
             }
         });
+
+        const linePaint = {
+            'line-color': zone.lineColor || membraneBaseColor,
+            'line-width': zone.lineWidth
+        };
+        linePaint['line-dasharray'] = Array.isArray(zone.lineDasharray) && zone.lineDasharray.length
+            ? zone.lineDasharray
+            : [1, 0];
 
         map.addLayer({
             'id': borderId,
             'type': 'line',
             'source': sourceId,
-            'paint': {
-                'line-color': zone.lineColor,
-                'line-width': zone.lineWidth,
-                'line-dasharray': zone.lineDasharray
+            'paint': linePaint,
+            'layout': {
+                'visibility': showMembranes ? 'visible' : 'none'
             }
         });
 
         renderedZoneIds.add(zone.id);
+        console.log(`Zona ${zone.id} adicionada ao mapa`);
     });
+    
+    console.log(`Total de zonas adicionadas: ${renderedZoneIds.size}`);
 }
 
 function showZoneContextMenu(lngLat, zoneName, zoneId) {
@@ -431,11 +816,8 @@ function showZoneContextMenu(lngLat, zoneName, zoneId) {
             document.getElementById('zone-name').value = zone.name || '';
             document.getElementById('zone-coordinates').value = JSON.stringify(zone.coordinates || []);
             document.getElementById('zone-radius').value = String(zone.radiusMeters || 1000);
-            document.getElementById('zone-fill-color').value = zone.fillColor || '#DC143C';
-            document.getElementById('zone-fill-opacity').value = String(zone.fillOpacity ?? 0.15);
-            document.getElementById('zone-line-color').value = zone.lineColor || zone.fillColor || '#DC143C';
-            document.getElementById('zone-line-width').value = String(zone.lineWidth ?? 2);
-            document.getElementById('zone-line-dasharray').value = JSON.stringify(zone.lineDasharray || [4, 2]);
+            document.getElementById('zone-state').value = normalizeMembraneState(zone.membraneState);
+            updateMembraneStyleSummary(getMembraneStateFromForm());
 
             const indicator = document.getElementById('zone-editing-indicator');
             const indicatorName = document.getElementById('zone-editing-name');
@@ -517,6 +899,9 @@ function clearZoneDrawPreview() {
     if (map.getLayer(zoneDrawLineId)) {
         map.removeLayer(zoneDrawLineId);
     }
+    if (map.getLayer('zone-draw-center')) {
+        map.removeLayer('zone-draw-center');
+    }
     if (map.getSource(zoneDrawSourceId)) {
         map.removeSource(zoneDrawSourceId);
     }
@@ -543,6 +928,12 @@ function updateZoneDrawPreview() {
         return;
     }
 
+    const membraneState = getMembraneStateFromForm();
+    const membraneStyle = getMembraneStyle(membraneState);
+    if (!map.hasImage(membraneStyle.pattern)) {
+        registerMembranePatterns();
+    }
+
     const featureCollection = {
         type: 'FeatureCollection',
         features: []
@@ -553,6 +944,7 @@ function updateZoneDrawPreview() {
         const radiusMeters = parseFloat(document.getElementById('zone-radius').value) || 0;
         if (radiusMeters > 0) {
             const circleCoords = createCirclePolygon(zoneDrawCoords[0], radiusMeters);
+            document.getElementById('zone-coordinates').value = JSON.stringify(circleCoords);
             featureCollection.features.push({
                 type: 'Feature',
                 geometry: {
@@ -587,8 +979,21 @@ function updateZoneDrawPreview() {
             source: zoneDrawSourceId,
             filter: ['==', ['get', 'kind'], 'fill'],
             paint: {
-                'fill-color': '#ffcc00',
-                'fill-opacity': 0.15
+                'fill-color': membraneBaseColor,
+                'fill-opacity': membraneStyle.fillOpacity,
+                'fill-pattern': membraneStyle.pattern
+            }
+        });
+
+        map.addLayer({
+            id: zoneDrawLineId,
+            type: 'line',
+            source: zoneDrawSourceId,
+            filter: ['==', ['get', 'kind'], 'fill'],
+            paint: {
+                'line-color': membraneBaseColor,
+                'line-width': membraneStyle.lineWidth,
+                'line-dasharray': membraneStyle.lineDasharray || [1, 0]
             }
         });
         
@@ -600,34 +1005,33 @@ function updateZoneDrawPreview() {
             filter: ['==', ['get', 'kind'], 'center'],
             paint: {
                 'circle-radius': 6,
-                'circle-color': '#ffcc00',
+                'circle-color': membraneBaseColor,
                 'circle-opacity': 1
             }
         });
     } else {
         map.getSource(zoneDrawSourceId).setData(featureCollection);
+        map.setPaintProperty(zoneDrawFillId, 'fill-opacity', membraneStyle.fillOpacity);
+        map.setPaintProperty(zoneDrawFillId, 'fill-pattern', membraneStyle.pattern);
+        map.setPaintProperty(zoneDrawLineId, 'line-width', membraneStyle.lineWidth);
+        map.setPaintProperty(
+            zoneDrawLineId,
+            'line-dasharray',
+            membraneStyle.lineDasharray || [1, 0]
+        );
     }
 }
 
 function setZoneDrawMode(isActive) {
     drawingZone = isActive;
     const drawBtn = document.getElementById('zone-draw');
-    const finishBtn = document.getElementById('zone-draw-finish');
-    const cancelBtn = document.getElementById('zone-draw-cancel');
     const isEditing = editingZoneId !== null;
 
     if (drawBtn) {
         drawBtn.classList.toggle('active', isActive);
-        drawBtn.textContent = isEditing ? 'Edição Ativa' : (isActive ? 'Desenho Ativo' : 'Desenhar Zona');
-    }
-
-    if (finishBtn) {
-        finishBtn.disabled = !isActive;
-        finishBtn.textContent = isEditing ? 'Confirmar Edição' : 'Finalizar Zona';
-    }
-
-    if (cancelBtn) {
-        cancelBtn.disabled = !isActive;
+        drawBtn.textContent = isEditing
+            ? 'Edicao Ativa'
+            : (isActive ? 'Modo Desenho (clique para sair)' : 'Modo Desenho');
     }
 
     if (isActive) {
@@ -646,30 +1050,28 @@ function setZoneDrawMode(isActive) {
         showNotification(msg);
     } else {
         clearZoneDrawPreview();
+        if (!isEditing) {
+            zoneDrawCoords = [];
+            window.zoneCenter = null;
+        }
         map.getCanvas().style.cursor = '';
         map.doubleClickZoom.enable();
     }
 }
 
-function finalizeZoneDraw() {
-    if (!drawingZone) {
-        return;
-    }
+function syncZoneCoordinatesFromDraw() {
     if (zoneDrawCoords.length !== 1) {
-        showNotification('Marque apenas uma vez para o centro da zona');
-        return;
+        return null;
     }
     const radiusMeters = parseFloat(document.getElementById('zone-radius').value) || 0;
     if (radiusMeters <= 0) {
-        showNotification('Ajuste o raio para um valor maior que 0 m');
-        return;
+        return null;
     }
     const center = zoneDrawCoords[0];
     const circleCoords = createCirclePolygon(center, radiusMeters);
     document.getElementById('zone-coordinates').value = JSON.stringify(circleCoords);
-    // Guardar referência do centro para edição posterior
     window.zoneCenter = center;
-    setZoneDrawMode(false);
+    return circleCoords;
 }
 
 function buildPopupHtml(location) {
@@ -788,10 +1190,33 @@ function deleteLocation(id) {
 
 // ===== ADICIONAR MARCADORES AO MAPA =====
 map.on('load', async function() {
-    // Precarregar e validar imagens de pins
-    await preloadPinImages();
+    console.log('=== INICIANDO CARREGAMENTO DO MAPA ===');
+    console.log('📄 Arquivos a carregar:');
+    console.log('   1. CRIS-locaisdefault.json (padrão com dados)');
+    console.log('   2. CRIS-locais.json (customizações)');
     
+    // Precarregar e validar imagens de pins
+    console.log('\nPasso 1: Precarregando imagens de pins...');
+    await preloadPinImages();
+    console.log('Passo 1 concluído');
+    
+    // Carregar imagem de membrana
+    console.log('Passo 2: Precarregando imagem de membrana...');
+    await preloadMembraneImage();
+    console.log('Passo 2 concluído. membraneImageLoaded =', membraneImageLoaded);
+    
+    // Registrar padrões de membrana ANTES de carregar zonas
+    console.log('Passo 3: Registrando padrões de membrana...');
+    try {
+        registerMembranePatterns();
+        console.log('✓ Passo 3 concluído - Padrões registrados');
+    } catch (error) {
+        console.error('✗ Passo 3 ERRO ao registrar padrões:', error);
+    }
+    
+    console.log('Passo 4: Carregando dados de JSON...');
     await loadLocationsFromJson();
+    console.log('Passo 4 concluído. zonesFromFile.length =', zonesFromFile.length);
 
     // Adicionar locais padrão
     locations.forEach(location => createMarker(location, false));
@@ -827,7 +1252,11 @@ map.on('load', async function() {
         }
     });
 
+    // Adicionar zonas ao mapa (padrões já estão registrados)
+    console.log('Passo 5: Adicionando zonas ao mapa...');
     addZonesToMap();
+    console.log('Passo 5 concluído');
+    
     updateConnections();
     
     // Renderizar lista de zonas no painel
@@ -835,6 +1264,8 @@ map.on('load', async function() {
     
     document.getElementById('toggle-connections').classList.add('active');
     document.getElementById('toggle-connections').innerHTML = '🔗 Ocultar Conexoes';
+    
+    console.log('=== CARREGAMENTO DO MAPA CONCLUÍDO ===');
 });
 
 // ===== LEGENDA =====
@@ -864,6 +1295,10 @@ legend.innerHTML = `
             <div class="legend-item"><span style="background: #FFD700; display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-right: 6px;"></span> Fonte de Informacao</div>
             <div class="legend-item"><span style="background: #DC143C; display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-right: 6px;"></span> Possivel Relacao</div>
         </div>
+        <div class="legend-section">
+            <div class="legend-title">MEMBRANA</div>
+            <div class="legend-item legend-toggle" id="toggle-membranes">Membranas: Ativas</div>
+        </div>
     </div>
 `;
 document.body.appendChild(legend);
@@ -891,6 +1326,16 @@ legend.querySelectorAll('.legend-item.legend-filter').forEach(item => {
         toggleFilter(filter);
     });
 });
+
+const membraneToggle = document.getElementById('toggle-membranes');
+if (membraneToggle) {
+    membraneToggle.addEventListener('click', () => {
+        showMembranes = !showMembranes;
+        setMembraneVisibility(showMembranes);
+        membraneToggle.textContent = showMembranes ? 'Membranas: Ativas' : 'Membranas: Ocultas';
+        membraneToggle.classList.toggle('inactive', !showMembranes);
+    });
+}
 
 // ===== SISTEMA DE PAINEIS =====
 const panelStack = document.createElement('div');
@@ -924,34 +1369,35 @@ const zonesContainer = document.createElement('div');
 zonesContainer.className = 'panel zones-panel panel-hidden';
 zonesContainer.id = 'zones-panel';
 zonesContainer.innerHTML = `
-    <div class="filter-title">ZONAS DE PERIGO</div>
+    <div class="filter-title">ZONAS DE MEMBRANA</div>
+    <div class="zone-note">Pontos onde a membrana e mais fraca.</div>
     <div class="zone-list" id="zone-list"></div>
     <div class="zone-form">
         <div id="zone-editing-indicator" class="zone-editing-indicator" style="display: none; color: #FFD700; margin-bottom: 8px; font-weight: bold;">
             ✎ Editando: <span id="zone-editing-name"></span>
         </div>
         <label for="zone-name">Nome</label>
-        <input type="text" id="zone-name" placeholder="Zona de perigo" />
+        <input type="text" id="zone-name" placeholder="Ponto de membrana" />
+        <label for="zone-state">Estado da membrana</label>
+        <select id="zone-state">
+            <option value="intacta">Intacta</option>
+            <option value="estavel" selected>Estavel</option>
+            <option value="danificada">Danificada</option>
+            <option value="arruinada">Arruinada</option>
+            <option value="rompida">Rompida</option>
+        </select>
+        <div id="zone-style-summary" class="zone-style-summary"></div>
         <div class="zone-draw-actions">
-            <button class="data-btn" id="zone-draw">Desenhar Zona</button>
-            <button class="data-btn" id="zone-draw-finish" disabled>Finalizar Desenho</button>
-            <button class="data-btn" id="zone-draw-cancel" disabled>Cancelar Desenho</button>
+            <button class="data-btn" id="zone-draw">Modo Desenho</button>
         </div>
         <label for="zone-radius">Raio (m)</label>
         <input type="number" id="zone-radius" min="100" max="50000" step="10" value="1000" />
         <textarea id="zone-coordinates" class="zone-coordinates-hidden" aria-hidden="true"></textarea>
-        <label for="zone-fill-color">Cor preenchimento</label>
-        <input type="color" id="zone-fill-color" value="#DC143C" />
-        <label for="zone-fill-opacity">Opacidade (0 a 1)</label>
-        <input type="number" id="zone-fill-opacity" min="0" max="1" step="0.05" value="0.15" />
-        <label for="zone-line-color">Cor borda</label>
-        <input type="color" id="zone-line-color" value="#DC143C" />
-        <label for="zone-line-width">Espessura borda</label>
-        <input type="number" id="zone-line-width" min="1" max="10" step="1" value="2" />
-        <label for="zone-line-dasharray">Tracejado (JSON)</label>
-        <input type="text" id="zone-line-dasharray" value="[4,2]" />
         <button class="data-btn" id="zone-save">Salvar Zona</button>
-        <button class="data-btn" id="zone-reset">Restaurar do Arquivo</button>
+        <details class="zone-advanced">
+            <summary>Avancado</summary>
+            <button class="data-btn" id="zone-reset">Restaurar do Arquivo</button>
+        </details>
     </div>
 `;
 panelStack.appendChild(zonesContainer);
@@ -981,7 +1427,6 @@ panelControls.className = 'panel-controls';
 panelControls.innerHTML = `
     <button class="panel-btn" data-panel="summary">Mostrar Sumario</button>
     <button class="panel-btn" data-panel="connections">Mostrar Conexoes</button>
-    <button class="panel-btn" data-panel="zones">Mostrar Zonas</button>
     <button class="panel-btn" data-panel="data">Mostrar Dados</button>
 `;
 document.body.appendChild(panelControls);
@@ -997,10 +1442,6 @@ panelControls.querySelector('[data-panel="summary"]').addEventListener('click', 
 
 panelControls.querySelector('[data-panel="connections"]').addEventListener('click', (event) => {
     togglePanel(connectionContainer, event.currentTarget, 'Conexoes');
-});
-
-panelControls.querySelector('[data-panel="zones"]').addEventListener('click', (event) => {
-    togglePanel(zonesContainer, event.currentTarget, 'Zonas');
 });
 
 panelControls.querySelector('[data-panel="data"]').addEventListener('click', (event) => {
@@ -1233,11 +1674,8 @@ function resetZoneForm() {
     document.getElementById('zone-name').value = '';
     document.getElementById('zone-coordinates').value = '';
     document.getElementById('zone-radius').value = '1000';
-    document.getElementById('zone-fill-color').value = '#DC143C';
-    document.getElementById('zone-fill-opacity').value = '0.15';
-    document.getElementById('zone-line-color').value = '#DC143C';
-    document.getElementById('zone-line-width').value = '2';
-    document.getElementById('zone-line-dasharray').value = '[4,2]';
+    document.getElementById('zone-state').value = 'estavel';
+    updateMembraneStyleSummary('estavel');
     
     // Esconder indicador de edição
     const indicator = document.getElementById('zone-editing-indicator');
@@ -1259,10 +1697,13 @@ function renderZonesList() {
 
     list.innerHTML = zonesFromFile.map((zone) => {
         const safeName = (zone.name || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const stateKey = normalizeMembraneState(zone.membraneState);
+        const stateLabel = getMembraneStyle(stateKey).label;
         return `
-            <div class="zone-item">
-                <span class="zone-color" style="background:${zone.fillColor}"></span>
+            <div class="zone-item" data-state="${stateKey}">
+                <span class="zone-color" data-state="${stateKey}"></span>
                 <span class="zone-text">${safeName}</span>
+                <span class="zone-state" data-state="${stateKey}">${stateLabel}</span>
                 <button class="zone-edit" data-zone-id="${zone.id}">Editar</button>
                 <button class="zone-remove" data-zone-id="${zone.id}">Remover</button>
             </div>
@@ -1280,11 +1721,8 @@ function renderZonesList() {
             document.getElementById('zone-name').value = zone.name || '';
             document.getElementById('zone-coordinates').value = JSON.stringify(zone.coordinates || []);
             document.getElementById('zone-radius').value = String(zone.radiusMeters || 1000);
-            document.getElementById('zone-fill-color').value = zone.fillColor || '#DC143C';
-            document.getElementById('zone-fill-opacity').value = String(zone.fillOpacity ?? 0.15);
-            document.getElementById('zone-line-color').value = zone.lineColor || zone.fillColor || '#DC143C';
-            document.getElementById('zone-line-width').value = String(zone.lineWidth ?? 2);
-            document.getElementById('zone-line-dasharray').value = JSON.stringify(zone.lineDasharray || [4, 2]);
+            document.getElementById('zone-state').value = normalizeMembraneState(zone.membraneState);
+            updateMembraneStyleSummary(getMembraneStateFromForm());
             
             // Mostrar indicador de edição
             const indicator = document.getElementById('zone-editing-indicator');
@@ -1381,25 +1819,43 @@ document.getElementById('zone-radius').addEventListener('input', () => {
     }
 });
 
+document.getElementById('zone-state').addEventListener('change', () => {
+    const stateKey = getMembraneStateFromForm();
+    updateMembraneStyleSummary(stateKey);
+    if (drawingZone && zoneDrawCoords.length === 1) {
+        updateZoneDrawPreview();
+    }
+});
+
+updateMembraneStyleSummary(getMembraneStateFromForm());
+
 document.getElementById('zone-save').addEventListener('click', (event) => {
     event.preventDefault();
-    const name = document.getElementById('zone-name').value.trim() || 'Zona de perigo';
+    const name = document.getElementById('zone-name').value.trim() || 'Ponto de membrana';
     const coordsRaw = document.getElementById('zone-coordinates').value.trim();
     const radiusMeters = parseFloat(document.getElementById('zone-radius').value) || 1000;
-    const fillColor = document.getElementById('zone-fill-color').value || '#DC143C';
-    const fillOpacity = parseFloat(document.getElementById('zone-fill-opacity').value);
-    const lineColor = document.getElementById('zone-line-color').value || '#DC143C';
-    const lineWidth = parseFloat(document.getElementById('zone-line-width').value);
-    const dashRaw = document.getElementById('zone-line-dasharray').value.trim();
+    const membraneState = getMembraneStateFromForm();
+    const membraneStyle = getMembraneStyle(membraneState);
 
-    if (!coordsRaw) {
+    let coordsValue = coordsRaw;
+    if (drawingZone) {
+        const synced = syncZoneCoordinatesFromDraw();
+        coordsValue = synced ? JSON.stringify(synced) : '';
+        if (!coordsValue) {
+            showNotification('Marque o centro da zona antes de salvar');
+            return;
+        }
+        setZoneDrawMode(false);
+    }
+
+    if (!coordsValue) {
         showNotification('Informe as coordenadas da zona');
         return;
     }
 
     let coordinates;
     try {
-        coordinates = JSON.parse(coordsRaw);
+        coordinates = JSON.parse(coordsValue);
     } catch (error) {
         showNotification('Coordenadas invalidas');
         return;
@@ -1410,40 +1866,18 @@ document.getElementById('zone-save').addEventListener('click', (event) => {
         return;
     }
 
-    if (Number.isNaN(fillOpacity) || fillOpacity < 0 || fillOpacity > 1) {
-        showNotification('Opacidade invalida');
-        return;
-    }
-
-    if (Number.isNaN(lineWidth) || lineWidth <= 0) {
-        showNotification('Espessura invalida');
-        return;
-    }
-
-    let lineDasharray = [4, 2];
-    if (dashRaw) {
-        try {
-            const parsedDash = JSON.parse(dashRaw);
-            if (Array.isArray(parsedDash) && parsedDash.length >= 2) {
-                lineDasharray = parsedDash.map((value) => Number(value)).filter((value) => !Number.isNaN(value));
-            }
-        } catch (error) {
-            showNotification('Tracejado invalido');
-            return;
-        }
-    }
-
     const zonePayload = normalizeZone({
         id: editingZoneId || `zone-${Date.now()}`,
         name,
+        membraneState: membraneState,
         coordinates,
         radiusMeters,
         center: window.zoneCenter || (coordinates[0] ? coordinates[0][0] : null),
-        fillColor,
-        fillOpacity,
-        lineColor,
-        lineWidth,
-        lineDasharray
+        fillColor: membraneBaseColor,
+        fillOpacity: membraneStyle.fillOpacity,
+        lineColor: membraneBaseColor,
+        lineWidth: membraneStyle.lineWidth,
+        lineDasharray: membraneStyle.lineDasharray
     }, zonesFromFile.length);
 
     if (editingZoneId) {
@@ -1460,6 +1894,10 @@ document.getElementById('zone-save').addEventListener('click', (event) => {
 
 document.getElementById('zone-reset').addEventListener('click', (event) => {
     event.preventDefault();
+    const confirmed = confirm('Restaurar do arquivo vai apagar as zonas atuais. Continuar?');
+    if (!confirmed) {
+        return;
+    }
     zonesFromFile = defaultZonesFromFile.map((zone) => cloneZone(zone));
     clearZonesStorage();
     rebuildZonesOnMap();
@@ -1472,21 +1910,6 @@ document.getElementById('zone-draw').addEventListener('click', (event) => {
     setZoneDrawMode(!drawingZone);
 });
 
-document.getElementById('zone-draw-finish').addEventListener('click', (event) => {
-    event.preventDefault();
-    finalizeZoneDraw();
-});
-
-document.getElementById('zone-draw-cancel').addEventListener('click', (event) => {
-    event.preventDefault();
-    zoneDrawCoords = [];
-    window.zoneCenter = null;
-    setZoneDrawMode(false);
-    if (editingZoneId) {
-        resetZoneForm();
-        showNotification('Edição cancelada');
-    }
-});
 
 // ===== EXPORTAR / IMPORTAR JSON =====
 document.getElementById('export-json').addEventListener('click', () => {
@@ -1623,34 +2046,78 @@ modal.id = 'location-modal';
 modal.className = 'modal';
 modal.innerHTML = `
     <div class="modal-content">
-        <h3 id="location-modal-title">Registro de Novo Sinal</h3>
+        <h3 id="location-modal-title">Registro Rapido</h3>
         <form id="location-form">
-            <label>Tipo de Sinal:</label>
-            <select id="location-type" required>
-                <option value="base">🏢 Bases</option>
-                <option value="casa">🏠 Casas</option>
-                <option value="loja">💼 Lojas/Contatos</option>
-                <option value="paranormal">⚠️ Registro do Paranormal</option>
-            </select>
+            <label>Registrar</label>
+            <div class="register-tabs" id="register-tabs">
+                <button type="button" class="register-tab active" data-register-type="local">Local</button>
+                <button type="button" class="register-tab" data-register-type="membrana">Membrana</button>
+            </div>
+            <input type="hidden" id="register-type" value="local" />
 
-            <label>Nivel de Ameaca:</label>
-            <select id="threat-level" required>
-                <option value="1">Baixo</option>
-                <option value="2">Medio</option>
-                <option value="3">Alto</option>
-            </select>
-            
-            <label>Designação:</label>
-            <input type="text" id="location-name" placeholder="Ex: Base Secundária" required>
-            
-            <label>Descrição:</label>
-            <textarea id="location-description" placeholder="Descrição detalhada do sinal detectado..." required></textarea>
-            
-            <label>Dados Adicionais:</label>
-            <textarea id="location-info" placeholder="NEX, nível de ameaça, recursos disponíveis..." required></textarea>
+            <div id="location-panel" class="modal-panel">
+                <div class="modal-panel-title">Local</div>
+
+                <label>Tipo</label>
+                <select id="location-type" required>
+                    <option value="base">🏢 Bases</option>
+                    <option value="casa">🏠 Casas</option>
+                    <option value="loja">💼 Lojas/Contatos</option>
+                    <option value="paranormal">⚠️ Registro do Paranormal</option>
+                </select>
+                
+                <label>Nome</label>
+                <input type="text" id="location-name" placeholder="Ex: Base Secundaria" required>
+
+                <label>Nivel de Ameaca</label>
+                <select id="threat-level" required>
+                    <option value="1">Baixo</option>
+                    <option value="2">Medio</option>
+                    <option value="3">Alto</option>
+                </select>
+                
+                <label>Descricao</label>
+                <textarea id="location-description" placeholder="Resumo do sinal..."></textarea>
+                
+                <label>Dados Adicionais</label>
+                <textarea id="location-info" placeholder="NEX, recursos, observacoes..."></textarea>
+
+                <div class="membrane-toggle" id="local-membrane-toggle" role="button" aria-pressed="false" tabindex="0">
+                    <span class="membrane-toggle-text">Estado da Membrana no local</span>
+                    <span class="membrane-status" id="local-membrane-status">Desativada</span>
+                </div>
+                <div class="membrane-fields" id="local-membrane-fields">
+                    <label>Estado da membrana</label>
+                    <select id="local-membrane-state">
+                        <option value="intacta">Intacta</option>
+                        <option value="estavel" selected>Estavel</option>
+                        <option value="danificada">Danificada</option>
+                        <option value="arruinada">Arruinada</option>
+                        <option value="rompida">Rompida</option>
+                    </select>
+                    <label>Raio da membrana (m)</label>
+                    <input type="number" id="local-membrane-radius" min="100" max="50000" step="10" value="1000" />
+                </div>
+            </div>
+
+            <div id="membrane-panel" class="modal-panel is-hidden">
+                <div class="modal-panel-title">Membrana</div>
+                <label>Nome da membrana</label>
+                <input type="text" id="membrane-name" placeholder="Ponto de membrana" />
+                <label>Estado da membrana</label>
+                <select id="membrane-state">
+                    <option value="intacta">Intacta</option>
+                    <option value="estavel" selected>Estavel</option>
+                    <option value="danificada">Danificada</option>
+                    <option value="arruinada">Arruinada</option>
+                    <option value="rompida">Rompida</option>
+                </select>
+                <label>Raio da membrana (m)</label>
+                <input type="number" id="membrane-radius" min="100" max="50000" step="10" value="1000" />
+            </div>
             
             <div class="modal-buttons">
-                <button type="submit" class="btn-confirm" id="location-submit-btn">Confirmar</button>
+                <button type="submit" class="btn-confirm" id="location-submit-btn">Salvar</button>
                 <button type="button" class="btn-cancel" onclick="closeModal()">Cancelar</button>
             </div>
         </form>
@@ -1668,7 +2135,160 @@ function updateThreatField() {
     }
 }
 
+function updateLocalMembraneStatus(isEnabled, isLinked) {
+    const status = document.getElementById('local-membrane-status');
+    const toggle = document.getElementById('local-membrane-toggle');
+    if (!status) {
+        return;
+    }
+    if (!isEnabled) {
+        status.textContent = 'Desativada';
+        if (toggle) {
+            toggle.classList.remove('active');
+            toggle.setAttribute('aria-pressed', 'false');
+        }
+        return;
+    }
+    status.textContent = isLinked ? 'Vinculada' : 'Ativa';
+    if (toggle) {
+        toggle.classList.add('active');
+        toggle.setAttribute('aria-pressed', 'true');
+    }
+}
+
+function toggleMembraneFields() {
+    const fields = document.getElementById('local-membrane-fields');
+    const enabled = fields ? !fields.classList.contains('is-hidden') : false;
+    updateLocalMembraneStatus(enabled, false);
+}
+
+function setLocalMembraneEnabled(isEnabled, isLinked) {
+    const fields = document.getElementById('local-membrane-fields');
+    const state = document.getElementById('local-membrane-state');
+    const radius = document.getElementById('local-membrane-radius');
+    if (fields) {
+        fields.classList.toggle('is-hidden', !isEnabled);
+    }
+    if (state) {
+        state.disabled = !isEnabled;
+    }
+    if (radius) {
+        radius.disabled = !isEnabled;
+    }
+    updateLocalMembraneStatus(isEnabled, isLinked);
+}
+
+function setPanelEnabled(panel, isEnabled) {
+    const elements = panel.querySelectorAll('input, select, textarea, button');
+    elements.forEach((element) => {
+        element.disabled = !isEnabled;
+    });
+}
+
+function setRegisterType(typeValue) {
+    const registerType = document.getElementById('register-type');
+    const tabs = document.querySelectorAll('.register-tab');
+    if (registerType) {
+        registerType.value = typeValue;
+    }
+    tabs.forEach((tab) => {
+        tab.classList.toggle('active', tab.dataset.registerType === typeValue);
+    });
+    updateRegisterTypePanel();
+}
+
+function setRegisterTabsLocked(isLocked) {
+    const tabs = document.querySelectorAll('.register-tab');
+    tabs.forEach((tab) => {
+        tab.disabled = isLocked;
+    });
+}
+
+function findZoneById(zoneId) {
+    if (!zoneId) {
+        return null;
+    }
+    return zonesFromFile.find((zone) => zone.id === zoneId) || null;
+}
+
+function updateRegisterTypePanel() {
+    const registerType = document.getElementById('register-type');
+    const locationPanel = document.getElementById('location-panel');
+    const membranePanel = document.getElementById('membrane-panel');
+    const isMembrane = registerType.value === 'membrana';
+
+    locationPanel.classList.toggle('is-hidden', isMembrane);
+    membranePanel.classList.toggle('is-hidden', !isMembrane);
+
+    setPanelEnabled(locationPanel, !isMembrane);
+    setPanelEnabled(membranePanel, isMembrane);
+
+    if (isMembrane) {
+        setLocalMembraneEnabled(false, false);
+    }
+}
+
+function resetLocalMembraneForm() {
+    const state = document.getElementById('local-membrane-state');
+    const radius = document.getElementById('local-membrane-radius');
+    if (state) {
+        state.value = 'estavel';
+    }
+    if (radius) {
+        radius.value = '1000';
+    }
+    setLocalMembraneEnabled(false, false);
+}
+
+function resetMembranePanelForm() {
+    const name = document.getElementById('membrane-name');
+    const state = document.getElementById('membrane-state');
+    const radius = document.getElementById('membrane-radius');
+    if (name) {
+        name.value = '';
+    }
+    if (state) {
+        state.value = 'estavel';
+    }
+    if (radius) {
+        radius.value = '1000';
+    }
+}
+
+function resetLocationForm() {
+    const form = document.getElementById('location-form');
+    if (form) {
+        form.reset();
+    }
+    setRegisterType('local');
+    setRegisterTabsLocked(false);
+    updateThreatField();
+    resetLocalMembraneForm();
+    resetMembranePanelForm();
+}
+
 document.getElementById('location-type').addEventListener('change', updateThreatField);
+document.querySelectorAll('.register-tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+        setRegisterType(tab.dataset.registerType);
+    });
+});
+document.getElementById('local-membrane-toggle').addEventListener('click', () => {
+    const fields = document.getElementById('local-membrane-fields');
+    const isEnabled = fields ? fields.classList.contains('is-hidden') : true;
+    setLocalMembraneEnabled(isEnabled, false);
+});
+document.getElementById('local-membrane-toggle').addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') {
+        return;
+    }
+    event.preventDefault();
+    const fields = document.getElementById('local-membrane-fields');
+    const isEnabled = fields ? fields.classList.contains('is-hidden') : true;
+    setLocalMembraneEnabled(isEnabled, false);
+});
+updateRegisterTypePanel();
+setLocalMembraneEnabled(false, false);
 
 // ===== FUNÇÕES DE CONTROLE =====
 function toggleAddMode() {
@@ -1681,7 +2301,7 @@ function toggleAddMode() {
         map.getCanvas().style.cursor = 'crosshair';
         editingLocationId = null;
         setModalMode(false);
-        updateThreatField();
+        resetLocationForm();
         showNotification('>>> Selecione localização no mapa');
     } else {
         btn.innerHTML = 'Registrar Novo Sinal';
@@ -1703,6 +2323,7 @@ function closeModal() {
     addingLocation = false;
     editingLocationId = null;
     setModalMode(false);
+    resetLocationForm();
     document.getElementById('add-location-btn').innerHTML = 'Registrar Novo Sinal';
     document.getElementById('add-location-btn').classList.remove('active');
     map.getCanvas().style.cursor = '';
@@ -1718,11 +2339,11 @@ function setModalMode(isEdit) {
     const title = document.getElementById('location-modal-title');
     const submitBtn = document.getElementById('location-submit-btn');
     if (isEdit) {
-        title.textContent = 'Editar Registro';
+        title.textContent = 'Edicao Rapida';
         submitBtn.textContent = 'Atualizar';
     } else {
-        title.textContent = 'Registro de Novo Sinal';
-        submitBtn.textContent = 'Confirmar';
+        title.textContent = 'Registro Rapido';
+        submitBtn.textContent = 'Salvar';
     }
 }
 
@@ -1731,6 +2352,9 @@ function editLocation(id) {
     if (!markerData) {
         return;
     }
+
+    setRegisterType('local');
+    setRegisterTabsLocked(true);
 
     editingLocationId = id;
     addingLocation = false;
@@ -1741,6 +2365,21 @@ function editLocation(id) {
     document.getElementById('location-info').value = markerData.location.info;
     document.getElementById('threat-level').value = String(markerData.location.threat || 1);
     updateThreatField();
+    resetLocalMembraneForm();
+    resetMembranePanelForm();
+
+    const localMembraneEnabled = document.getElementById('local-membrane-enabled');
+    const localMembraneState = document.getElementById('local-membrane-state');
+    const localMembraneRadius = document.getElementById('local-membrane-radius');
+    const membraneZoneId = markerData.location.membraneZoneId;
+    const linkedZone = findZoneById(membraneZoneId);
+    if (linkedZone && localMembraneState && localMembraneRadius) {
+        localMembraneState.value = normalizeMembraneState(linkedZone.membraneState);
+        localMembraneRadius.value = String(linkedZone.radiusMeters || 1000);
+        setLocalMembraneEnabled(true, true);
+    } else {
+        setLocalMembraneEnabled(false, false);
+    }
 
     setModalMode(true);
     document.getElementById('location-modal').style.display = 'flex';
@@ -1815,26 +2454,79 @@ map.on('dblclick', (e) => {
         return;
     }
     e.preventDefault();
-    finalizeZoneDraw();
+    setZoneDrawMode(false);
 });
 
 // ===== SUBMIT DO FORMULÁRIO =====
 document.getElementById('location-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    
+    const registerType = document.getElementById('register-type').value;
+
+    if (registerType === 'membrana') {
+        const membraneNameRaw = document.getElementById('membrane-name').value.trim();
+        const membraneState = normalizeMembraneState(document.getElementById('membrane-state').value);
+        const membraneRadius = parseFloat(document.getElementById('membrane-radius').value);
+        if (Number.isNaN(membraneRadius) || membraneRadius <= 0) {
+            showNotification('Raio da membrana invalido');
+            return;
+        }
+        if (!window.tempCoords) {
+            showNotification('Selecione um ponto no mapa');
+            return;
+        }
+
+        const membraneName = membraneNameRaw || 'Ponto de membrana';
+        const zonePayload = normalizeZone({
+            id: `zone-${Date.now()}`,
+            name: membraneName,
+            membraneState: membraneState,
+            center: window.tempCoords,
+            radiusMeters: membraneRadius,
+            coordinates: createCirclePolygon(window.tempCoords, membraneRadius)
+        }, zonesFromFile.length);
+
+        zonesFromFile.push(zonePayload);
+        saveZonesToStorage(zonesFromFile);
+        rebuildZonesOnMap();
+        renderZonesList();
+        closeModal();
+        showNotification('Membrana registrada com sucesso');
+        return;
+    }
+
     const type = document.getElementById('location-type').value;
-    const name = document.getElementById('location-name').value;
-    const description = document.getElementById('location-description').value;
-    const info = document.getElementById('location-info').value;
+    const name = document.getElementById('location-name').value.trim();
+    const descriptionRaw = document.getElementById('location-description').value.trim();
+    const infoRaw = document.getElementById('location-info').value.trim();
     const threatLevel = document.getElementById('threat-level').value;
     const threatValue = type === 'paranormal' ? parseInt(threatLevel, 10) : 0;
-    
+
+    if (!name) {
+        showNotification('Informe o nome do sinal');
+        return;
+    }
+
+    const description = descriptionRaw || 'Sem descricao';
+    const info = infoRaw || 'Sem dados adicionais';
+
+    const membraneFields = document.getElementById('local-membrane-fields');
+    const membraneEnabled = membraneFields ? !membraneFields.classList.contains('is-hidden') : false;
+    const membraneState = normalizeMembraneState(document.getElementById('local-membrane-state').value);
+    const membraneRadius = parseFloat(document.getElementById('local-membrane-radius').value);
+    if (membraneEnabled && (Number.isNaN(membraneRadius) || membraneRadius <= 0)) {
+        showNotification('Raio da membrana invalido');
+        return;
+    }
+
     if (editingLocationId) {
         const markerData = allMarkers.find(m => m.id === editingLocationId);
         if (!markerData) {
             closeModal();
             return;
         }
+
+        let membraneAction = null;
+        let membraneZoneId = markerData.location.membraneZoneId || null;
 
         const updatedLocation = {
             ...markerData.location,
@@ -1844,6 +2536,41 @@ document.getElementById('location-form').addEventListener('submit', (e) => {
             info: info,
             threat: threatValue
         };
+
+        if (membraneEnabled) {
+            const existingZone = findZoneById(membraneZoneId);
+            const zonePayload = normalizeZone({
+                id: existingZone ? existingZone.id : `zone-${Date.now()}`,
+                name: `Membrana - ${name}`,
+                membraneState: membraneState,
+                center: updatedLocation.coords,
+                radiusMeters: membraneRadius,
+                coordinates: createCirclePolygon(updatedLocation.coords, membraneRadius)
+            }, zonesFromFile.length);
+
+            if (existingZone) {
+                zonesFromFile = zonesFromFile.map((zone) => zone.id === existingZone.id ? zonePayload : zone);
+                membraneAction = 'updated';
+            } else {
+                zonesFromFile.push(zonePayload);
+                membraneZoneId = zonePayload.id;
+                membraneAction = 'created';
+            }
+        } else if (membraneZoneId) {
+            const existingZone = findZoneById(membraneZoneId);
+            if (existingZone) {
+                const shouldRemove = confirm('Remover a membrana vinculada a este local?');
+                if (shouldRemove) {
+                    zonesFromFile = zonesFromFile.filter((zone) => zone.id !== membraneZoneId);
+                    membraneAction = 'removed';
+                } else {
+                    membraneAction = 'unlinked';
+                }
+            }
+            membraneZoneId = null;
+        }
+
+        updatedLocation.membraneZoneId = membraneZoneId;
 
         const customIndex = customLocations.findIndex(loc => loc.id === editingLocationId);
         if (customIndex !== -1) {
@@ -1858,7 +2585,8 @@ document.getElementById('location-form').addEventListener('submit', (e) => {
                     name: updatedLocation.name,
                     description: updatedLocation.description,
                     info: updatedLocation.info,
-                    threat: updatedLocation.threat
+                    threat: updatedLocation.threat,
+                    membraneZoneId: updatedLocation.membraneZoneId
                 };
                 saveDefaultEdits(defaultEdits);
             }
@@ -1869,9 +2597,28 @@ document.getElementById('location-form').addEventListener('submit', (e) => {
         createMarker(updatedLocation);
         refreshConnectionOptions();
 
-        document.getElementById('location-form').reset();
+        if (membraneAction) {
+            saveZonesToStorage(zonesFromFile);
+            rebuildZonesOnMap();
+            renderZonesList();
+        }
+
         closeModal();
         showNotification('Registro atualizado com sucesso');
+        if (membraneAction === 'updated') {
+            showNotification('Membrana atualizada');
+        } else if (membraneAction === 'created') {
+            showNotification('Membrana criada');
+        } else if (membraneAction === 'removed') {
+            showNotification('Membrana removida');
+        } else if (membraneAction === 'unlinked') {
+            showNotification('Membrana mantida (local sem vinculo)');
+        }
+        return;
+    }
+
+    if (!window.tempCoords) {
+        showNotification('Selecione um ponto no mapa');
         return;
     }
 
@@ -1882,16 +2629,31 @@ document.getElementById('location-form').addEventListener('submit', (e) => {
         coords: window.tempCoords,
         description: description,
         info: info,
-        threat: threatValue
+        threat: threatValue,
+        membraneZoneId: null
     };
     
     customLocations.push(newLocation);
     saveCustomLocations();
     createMarker(newLocation);
     refreshConnectionOptions();
+
+    if (membraneEnabled) {
+        const zonePayload = normalizeZone({
+            id: `zone-${Date.now()}`,
+            name: `Membrana - ${name}`,
+            membraneState: membraneState,
+            center: newLocation.coords,
+            radiusMeters: membraneRadius,
+            coordinates: createCirclePolygon(newLocation.coords, membraneRadius)
+        }, zonesFromFile.length);
+        zonesFromFile.push(zonePayload);
+        newLocation.membraneZoneId = zonePayload.id;
+        saveZonesToStorage(zonesFromFile);
+        rebuildZonesOnMap();
+        renderZonesList();
+    }
     
-    // Limpar e fechar
-    document.getElementById('location-form').reset();
     closeModal();
     showNotification('Sinal registrado com sucesso');
 });
