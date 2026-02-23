@@ -164,35 +164,35 @@ const membraneBaseColor = '#ffffff';
 const membraneStates = {
     intacta: {
         label: 'Intacta',
-        fillOpacity: 0.15,
+        fillOpacity: 0.30,
         lineWidth: 1.5,
         lineDasharray: null,
         pattern: 'membrane-texture-intacta'
     },
     estavel: {
         label: 'Estavel',
-        fillOpacity: 0.25,
+        fillOpacity: 0.45,
         lineWidth: 2,
         lineDasharray: [6, 2],
         pattern: 'membrane-texture-estavel'
     },
     danificada: {
         label: 'Danificada',
-        fillOpacity: 0.40,
+        fillOpacity: 0.60,
         lineWidth: 2.5,
         lineDasharray: [4, 3],
         pattern: 'membrane-texture-danificada'
     },
     arruinada: {
         label: 'Arruinada',
-        fillOpacity: 0.60,
+        fillOpacity: 0.80,
         lineWidth: 3,
         lineDasharray: [2, 2],
         pattern: 'membrane-texture-arruinada'
     },
     rompida: {
         label: 'Rompida',
-        fillOpacity: 0.85,
+        fillOpacity: 0.95,
         lineWidth: 3.5,
         lineDasharray: [1, 2],
         pattern: 'membrane-texture-rompida'
@@ -223,181 +223,123 @@ function preloadMembraneImage() {
         img.onload = function() {
             membraneImage = img;
             membraneImageLoaded = true;
-            console.log('✓ Imagem de membrana carregada com sucesso (', img.width, 'x', img.height, ')');
+            console.log('✓ MEMBRANA: Imagem carregada com sucesso (' + img.width + 'x' + img.height + ')');
             resolve(true);
         };
         img.onerror = function(error) {
-            console.error('✗ Erro ao carregar imagem de membrana:', error);
+            console.error('✗ MEMBRANA: Falha ao carregar imagem - ' + error);
             membraneImageLoaded = false;
             resolve(false);
         };
-        console.log('Iniciando carregamento de media/textura/membrana.png...');
+        console.log('⏳ MEMBRANA: Carregando media/textura/membrana.png...');
         img.src = 'media/textura/membrana.png';
     });
 }
 
 function buildMembranePatternCanvas(stateKey) {
-    const size = 32;  // Ainda menor para garantir compatibilidade
+    if (!membraneImageLoaded || !membraneImage) {
+        console.warn(`   ✗ MEMBRANA[${stateKey}]: Imagem não disponível`);
+        return null;
+    }
+
+    // Usar tamanho fixo de 256x256 (potência de 2, melhor para texturas)
+    const size = 256;
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
     
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const ctx = canvas.getContext('2d');
     if (!ctx) {
-        console.error(`[${stateKey}] Não foi possível obter contexto 2D do canvas`);
+        console.error(`   ✗ MEMBRANA[${stateKey}]: Falha ao obter contexto 2D`);
         return null;
     }
     
-    ctx.fillStyle = 'rgba(0, 0, 0, 0)';
+    // Limpar canvas
     ctx.clearRect(0, 0, size, size);
 
-    // Se a imagem foi carregada, desenhar ela
-    if (membraneImageLoaded && membraneImage) {
-        console.log(`[${stateKey}] Usando imagem membrana.png carregada`);
-        
-        let globalOpacity = 0.5;
-        if (stateKey === 'intacta') globalOpacity = 0.15;
-        else if (stateKey === 'estavel') globalOpacity = 0.25;
-        else if (stateKey === 'danificada') globalOpacity = 0.40;
-        else if (stateKey === 'arruinada') globalOpacity = 0.60;
-        else if (stateKey === 'rompida') globalOpacity = 0.85;
-        
-        try {
-            ctx.globalAlpha = globalOpacity;
-            ctx.drawImage(membraneImage, 0, 0, size, size);
-            ctx.globalAlpha = 1.0;
-        } catch (error) {
-            console.warn(`[${stateKey}] Erro ao desenhar imagem, usando fallback:`, error);
-        }
-        
-        return canvas;
-    }
-    
-    // Fallback: Gerar nebulosa rosa proceduralmente (se membrana.png não carregar)
-    console.warn(`[${stateKey}] Gerando nebulosa rosa proceduralmente`);
-    
-    let particleCount = 50;
+    // Calcular opacidade baseada no estado
     let opacity = 0.5;
-    
-    if (stateKey === 'intacta') {
-        particleCount = 8;
-        opacity = 0.15;
-    } else if (stateKey === 'estavel') {
-        particleCount = 12;
-        opacity = 0.25;
-    } else if (stateKey === 'danificada') {
-        particleCount = 16;
-        opacity = 0.40;
-    } else if (stateKey === 'arruinada') {
-        particleCount = 24;
-        opacity = 0.60;
-    } else if (stateKey === 'rompida') {
-        particleCount = 32;
-        opacity = 0.85;
-    }
-    
-    // Cores rosa/avermelhada (como a imagem desejada)
-    const baseHues = [
-        'rgba(255, 200, 220, 0.3)',  // Rosa claro
-        'rgba(255, 150, 180, 0.25)', // Rosa médio
-        'rgba(255, 100, 150, 0.2)',  // Rosa escuro
-        'rgba(240, 80, 120, 0.2)',   // Vermelho-rosa
-        'rgba(255, 180, 200, 0.3)'   // Rosa pálido
-    ];
-    
-    // Seed pseudo-aleatória
-    const seed = stateKey.charCodeAt(0);
-    let random = seed;
-    
-    function seededRandom() {
-        random = (random * 9301 + 49297) % 233280;
-        return random / 233280;
-    }
-    
-    // Desenhar múltiplas camadas de círculos com padrão nebuloso
-    for (let layer = 0; layer < 3; layer++) {  // Reduzido de 4 para 3 camadas
-        const layerParticles = Math.floor(particleCount * (1 - layer * 0.2));
-        
-        for (let i = 0; i < layerParticles; i++) {
-            const x = seededRandom() * size;
-            const y = seededRandom() * size;
-            const radius = 3 + seededRandom() * 8 + layer * 1.5;  // Reduzido substancialmente
-            const hueIndex = Math.floor(seededRandom() * baseHues.length);
-            
-            // Criar gradiente radial rosa
-            const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
-            gradient.addColorStop(0, baseHues[hueIndex]);
-            gradient.addColorStop(0.5, baseHues[hueIndex].replace('0.', '0.1'));
-            gradient.addColorStop(1, 'rgba(255, 200, 220, 0)');
-            
-            ctx.fillStyle = gradient;
-            ctx.beginPath();
-            ctx.arc(x, y, radius, 0, Math.PI * 2);
-            ctx.fill();
-        }
-    }
-    
-    // Aplicar opacidade global ao todo
-    ctx.globalAlpha = opacity;
-    ctx.fillStyle = 'rgba(255, 200, 220, 0.1)';
-    ctx.fillRect(0, 0, size, size);
-    ctx.globalAlpha = 1.0;
+    if (stateKey === 'intacta') opacity = 0.30;
+    else if (stateKey === 'estavel') opacity = 0.45;
+    else if (stateKey === 'danificada') opacity = 0.60;
+    else if (stateKey === 'arruinada') opacity = 0.80;
+    else if (stateKey === 'rompida') opacity = 0.95;
 
-    return canvas;
+    try {
+        // Desenhar imagem com opacidade
+        ctx.globalAlpha = opacity;
+        ctx.drawImage(membraneImage, 0, 0, size, size);
+        ctx.globalAlpha = 1.0;
+        
+        // Criar ImageData a partir do canvas para garantir compatibilidade
+        const imageData = ctx.getImageData(0, 0, size, size);
+        
+        // Retornar objeto com dados da imagem (não canvas direto)
+        return {
+            width: size,
+            height: size,
+            data: new Uint8ClampedArray(imageData.data)
+        };
+    } catch (error) {
+        console.error(`   ✗ MEMBRANA[${stateKey}]: Erro ao processar imagem - ${error.message}`);
+        return null;
+    }
 }
 
 function registerMembranePatterns() {
     // Evitar registrar múltiplas vezes
     if (membranePatternRegistered) {
-        console.log('✓ Padrões de membrana já registrados');
+        console.log('✓ MEMBRANA: Padrões já registrados');
         return;
     }
     
-    console.log('🎨 Registrando padrões de membrana (5 padrões únicos)...');
+    console.log('🎨 MEMBRANA: Registrando 5 padrões únicos...');
     let successCount = 0;
     let errorCount = 0;
     
     Object.keys(membraneStates).forEach((stateKey) => {
         const patternName = membraneStates[stateKey].pattern;
         
-        // Verificar se já existe
+        // Se já existe, reutilizar
         if (map.hasImage(patternName)) {
-            console.log(`   ⚠️  Padrão "${patternName}" já existe, pulando...`);
+            console.log(`   ✓ MEMBRANA[${stateKey}]: Usando padrão existente`);
+            successCount++;
             return;
         }
         
         try {
-            const canvas = buildMembranePatternCanvas(stateKey);
+            const imageData = buildMembranePatternCanvas(stateKey);
             
-            if (!canvas) {
-                console.error(`   ✗ Canvas nulo para ${stateKey}`);
+            if (!imageData) {
+                console.warn(`   ✗ MEMBRANA[${stateKey}]: ImageData inválida - NÃO RENDERIZARÁ`);
                 errorCount++;
                 return;
             }
             
-            console.log(`   [${stateKey}] Canvas: ${canvas.width}x${canvas.height}`);
+            console.log(`   ✓ MEMBRANA[${stateKey}]: ImageData criada (${imageData.width}x${imageData.height})`);
             
-            map.addImage(patternName, canvas, { 
+            // Registrar ImageData no MapLibre
+            map.addImage(patternName, imageData, {
                 pixelRatio: 1,
                 sdf: false
             });
             
             // Verificar se foi realmente registrado
             if (map.hasImage(patternName)) {
-                console.log(`   ✓ Padrão registrado: ${patternName}`);
+                console.log(`   ✅ MEMBRANA[${stateKey}]: ${patternName} registrado com sucesso`);
                 successCount++;
             } else {
-                console.warn(`   ⚠️  Padrão ${patternName} não foi registrado corretamente`);
+                console.error(`   ✗ MEMBRANA[${stateKey}]: Falha ao registrar - ${patternName}`);
                 errorCount++;
             }
         } catch (error) {
-            console.error(`   ✗ Erro ao registrar ${patternName}:`, error.message);
+            console.error(`   ✗ MEMBRANA[${stateKey}]: ERRO CRÍTICO - ${error.message}`);
             errorCount++;
         }
     });
     
     membranePatternRegistered = true;
-    console.log(`✓ Registro concluído: ${successCount} sucesso, ${errorCount} erro(s)`);
+    console.log(`✅ MEMBRANA: ${successCount}/${Object.keys(membraneStates).length} padrões OK | ❌ ${errorCount} falhas`);
 }
 
 function setMembraneVisibility(isVisible) {
@@ -497,7 +439,7 @@ function normalizeZone(zone, index) {
         radiusMeters: zone.radiusMeters,
         fillColor: membraneBaseColor,
         fillOpacity: membraneStyle.fillOpacity,
-        fillPattern: membraneStyle.pattern,
+        fillPattern: membraneStyle.pattern,  // ✓ Sempre usa o padrão correto baseado no estado
         lineColor: membraneBaseColor,
         lineWidth: membraneStyle.lineWidth,
         lineDasharray: membraneStyle.lineDasharray ? [...membraneStyle.lineDasharray] : null
@@ -505,6 +447,10 @@ function normalizeZone(zone, index) {
 }
 
 function cloneZone(zone) {
+    // Sempre regenera o padrão baseado no estado (não usa fillPattern do arquivo antigo)
+    const membraneState = normalizeMembraneState(zone.membraneState);
+    const membraneStyle = getMembraneStyle(membraneState);
+    
     return {
         ...zone,
         coordinates: Array.isArray(zone.coordinates)
@@ -512,8 +458,8 @@ function cloneZone(zone) {
             : zone.coordinates,
         center: zone.center ? [...zone.center] : zone.center,
         radiusMeters: zone.radiusMeters,
-        membraneState: zone.membraneState,
-        fillPattern: zone.fillPattern,
+        membraneState: membraneState,
+        fillPattern: membraneStyle.pattern,  // ✓ Sempre regenera baseado no estado
         lineDasharray: Array.isArray(zone.lineDasharray) ? [...zone.lineDasharray] : zone.lineDasharray
     };
 }
@@ -620,21 +566,21 @@ async function loadLocationsFromJson() {
             ? defaultData.zones.map((zone, index) => normalizeZone(zone, index))
             : [];
         
-        console.log('📍 Zonas carregadas de CRIS-locaisdefault.json:', defaultZonesFromFile.length);
+        console.log(`📍 MEMBRANA: ${defaultZonesFromFile.length} zona(s) carregada(s) do arquivo padrão`);
         defaultZonesFromFile.forEach(zone => {
-            console.log(`   - ${zone.id}: ${zone.name} (${zone.membraneState})`);
+            console.log(`   📍[${zone.id}]: "${zone.name}" (estado: ${zone.membraneState})`);
         });
 
         const storedZones = loadZonesFromStorage();
-        console.log('💾 Zonas armazenadas em LocalStorage:', storedZones ? storedZones.length : 0);
+        console.log(`💾 MEMBRANA: ${storedZones ? storedZones.length : 0} zona(s) carregada(s) do armazenamento`);
         
         zonesFromFile = storedZones
             ? storedZones.map((zone) => cloneZone(zone))
             : defaultZonesFromFile.map((zone) => cloneZone(zone));
         
-        console.log('✓ Zonas finais carregadas:', zonesFromFile.length);
+        console.log(`📍 MEMBRANA: ${zonesFromFile.length} zona(s) TOTAL para renderizar`);
         zonesFromFile.forEach(zone => {
-            console.log(`   - ${zone.id}: ${zone.name} (${zone.membraneState})`);
+            console.log(`   📍[${zone.id}]: "${zone.name}" (${zone.membraneState})`);
         });
     } catch (error) {
         locations = [];
@@ -667,11 +613,11 @@ function clearZonesFromMap() {
 }
 
 function addZonesToMap() {
-    console.log(`Adicionando ${zonesFromFile.length} zonas ao mapa`);
+    console.log(`📍 MEMBRANA: Adicionando ${zonesFromFile.length} zonas ao mapa`);
     
     zonesFromFile.forEach((zone) => {
         if (!Array.isArray(zone.coordinates)) {
-            console.warn(`Zona ${zone.id} sem coordenadas válidas`);
+            console.warn(`📍 MEMBRANA[${zone.id}]: Sem coordenadas válidas - NÃO RENDERIZARÁ`);
             return;
         }
 
@@ -680,7 +626,7 @@ function addZonesToMap() {
         const borderId = `${zone.id}-border`;
 
         if (map.getSource(sourceId)) {
-            console.log(`Zona ${zone.id} já existe no mapa`);
+            console.log(`📍 MEMBRANA[${zone.id}]: Já existe no mapa`);
             return;
         }
 
@@ -706,18 +652,15 @@ function addZonesToMap() {
         };
         const fillPattern = zone.fillPattern || style.pattern;
         
-        console.log(`Zona ${zone.id}: tentando usar padrão "${fillPattern}", existe? ${map.hasImage(fillPattern)}`);
-        
-        // Se o padrão existe, usar fill-pattern
-        if (map.hasImage(fillPattern)) {
-            fillPaint['fill-pattern'] = fillPattern;
-            console.log(`✓ Zona ${zone.id} usando padrão`);
-        } else {
-            // Fallback: usar apenas fill-color com opacity aumentada
-            console.warn(`⚠️  Padrão "${fillPattern}" não encontrado para zona ${zone.id}, usando fallback de cor`);
-            // Aumentar a opacidade já que não há padrão
-            fillPaint['fill-opacity'] = Math.min(zone.fillOpacity * 1.5, 0.8);
+        // ✓ Só renderiza com padrão - Se não tem padrão, membrana não aparece
+        if (!map.hasImage(fillPattern)) {
+            console.warn(`📍 MEMBRANA[${zone.id}] (${zone.membraneState}): Padrão "${fillPattern}" NÃO encontrado - NÃO RENDERIZARÁ`);
+            renderedZoneIds.add(zone.id);
+            return;  // Não adiciona layers
         }
+        
+        fillPaint['fill-pattern'] = fillPattern;
+        console.log(`📍 MEMBRANA[${zone.id}] (${zone.membraneState}): ✓ Renderizando com imagem`);
 
         map.addLayer({
             'id': fillId,
@@ -748,10 +691,9 @@ function addZonesToMap() {
         });
 
         renderedZoneIds.add(zone.id);
-        console.log(`Zona ${zone.id} adicionada ao mapa`);
     });
     
-    console.log(`Total de zonas adicionadas: ${renderedZoneIds.size}`);
+    console.log(`📍 MEMBRANA: ${renderedZoneIds.size} zona(s) renderizada(s)`);
 }
 
 function showZoneContextMenu(lngLat, zoneName, zoneId) {
@@ -1190,33 +1132,28 @@ function deleteLocation(id) {
 
 // ===== ADICIONAR MARCADORES AO MAPA =====
 map.on('load', async function() {
-    console.log('=== INICIANDO CARREGAMENTO DO MAPA ===');
-    console.log('📄 Arquivos a carregar:');
-    console.log('   1. CRIS-locaisdefault.json (padrão com dados)');
-    console.log('   2. CRIS-locais.json (customizações)');
+    console.log('=== 🗂️ INICIANDO CARREGAMENTO DO MAPA ===');
     
     // Precarregar e validar imagens de pins
-    console.log('\nPasso 1: Precarregando imagens de pins...');
+    console.log('⏳ Carregando imagens de pins...');
     await preloadPinImages();
-    console.log('Passo 1 concluído');
+    console.log('✓ Imagens de pins carregadas');
     
     // Carregar imagem de membrana
-    console.log('Passo 2: Precarregando imagem de membrana...');
+    console.log('⏳ Carregando membrana...');
     await preloadMembraneImage();
-    console.log('Passo 2 concluído. membraneImageLoaded =', membraneImageLoaded);
     
     // Registrar padrões de membrana ANTES de carregar zonas
-    console.log('Passo 3: Registrando padrões de membrana...');
+    console.log('⏳ Registrando padrões de membrana...');
     try {
         registerMembranePatterns();
-        console.log('✓ Passo 3 concluído - Padrões registrados');
+        console.log('✓ Padrões de membrana processados');
     } catch (error) {
-        console.error('✗ Passo 3 ERRO ao registrar padrões:', error);
+        console.error('✗ ERRO ao registrar padrões de membrana:', error);
     }
     
-    console.log('Passo 4: Carregando dados de JSON...');
+    console.log('⏳ Carregando dados de JSON...');
     await loadLocationsFromJson();
-    console.log('Passo 4 concluído. zonesFromFile.length =', zonesFromFile.length);
 
     // Adicionar locais padrão
     locations.forEach(location => createMarker(location, false));
@@ -1253,9 +1190,9 @@ map.on('load', async function() {
     });
 
     // Adicionar zonas ao mapa (padrões já estão registrados)
-    console.log('Passo 5: Adicionando zonas ao mapa...');
+    console.log('⏳ Adicionando membranas ao mapa...');
     addZonesToMap();
-    console.log('Passo 5 concluído');
+    console.log('✓ Membranas adicionadas');
     
     updateConnections();
     
@@ -1265,7 +1202,7 @@ map.on('load', async function() {
     document.getElementById('toggle-connections').classList.add('active');
     document.getElementById('toggle-connections').innerHTML = '🔗 Ocultar Conexoes';
     
-    console.log('=== CARREGAMENTO DO MAPA CONCLUÍDO ===');
+    console.log('=== ✅ CARREGAMENTO DO MAPA CONCLUÍDO ===');
 });
 
 // ===== LEGENDA =====

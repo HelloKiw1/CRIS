@@ -292,8 +292,8 @@
       ],
       "radiusMeters": 1000,
       "fillColor": "#ffffff",
-      "fillOpacity": 0.85,
-      "fillPattern": "membrane-texture",
+      "fillOpacity": 0.95,
+      "fillPattern": "membrane-texture-rompida",
       "lineColor": "#ffffff",
       "lineWidth": 3.5,
       "lineDasharray": [
@@ -575,8 +575,8 @@
       ],
       "radiusMeters": 1000,
       "fillColor": "#ffffff",
-      "fillOpacity": 0.85,
-      "fillPattern": "membrane-texture",
+      "fillOpacity": 0.95,
+      "fillPattern": "membrane-texture-rompida",
       "lineColor": "#ffffff",
       "lineWidth": 3.5,
       "lineDasharray": [
