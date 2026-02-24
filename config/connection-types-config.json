@@ -1,0 +1,45 @@
+{
+  "connectionTypes": {
+    "investigacao_ativa": {
+      "label": "Investigacao Ativa",
+      "description": "Investigação em progresso entre locais",
+      "color": "#4169E1",
+      "dasharray": [2, 2],
+      "opacity": 0.6,
+      "width": 4,
+      "emoji": "🔍"
+    },
+    "monitoramento": {
+      "label": "Monitoramento",
+      "description": "Local sob vigilância contínua",
+      "color": "#00FF00",
+      "dasharray": [2, 2],
+      "opacity": 0.6,
+      "width": 4,
+      "emoji": "👁️"
+    },
+    "fonte_informacao": {
+      "label": "Fonte de Informacao",
+      "description": "Fornece inteligência sobre outros locais",
+      "color": "#FFD700",
+      "dasharray": [2, 2],
+      "opacity": 0.6,
+      "width": 4,
+      "emoji": "📡"
+    },
+    "possivel_relacao": {
+      "label": "Possivel Relacao",
+      "description": "Possível conexão paranormal não confirmada",
+      "color": "#DC143C",
+      "dasharray": [5, 5],
+      "opacity": 0.4,
+      "width": 2,
+      "emoji": "❓"
+    }
+  },
+  "metadata": {
+    "version": "1.0",
+    "lastUpdated": "2026-02-23",
+    "description": "Tipos de conexões entre locais no mapa"
+  }
+}

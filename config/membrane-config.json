@@ -1,0 +1,62 @@
+{
+  "membraneStates": {
+    "intacta": {
+      "label": "Intacta",
+      "description": "Membrana em perfeito estado, barreira completamente funcional",
+      "fillOpacity": 0.30,
+      "lineWidth": 1.5,
+      "lineDasharray": null,
+      "pattern": "membrane-texture-intacta",
+      "threatLevel": 0,
+      "color": "#00FF00"
+    },
+    "estavel": {
+      "label": "Estável",
+      "description": "Membrana com leve deterioração, proteção ainda funcional",
+      "fillOpacity": 0.45,
+      "lineWidth": 2,
+      "lineDasharray": [6, 2],
+      "pattern": "membrane-texture-estavel",
+      "threatLevel": 1,
+      "color": "#FFFF00"
+    },
+    "danificada": {
+      "label": "Danificada",
+      "description": "Membrana comprometida, proteção diminuída significativamente",
+      "fillOpacity": 0.60,
+      "lineWidth": 2.5,
+      "lineDasharray": [4, 3],
+      "pattern": "membrane-texture-danificada",
+      "threatLevel": 2,
+      "color": "#FFA500"
+    },
+    "arruinada": {
+      "label": "Arruinada",
+      "description": "Membrana praticamente destruída, proteção mínima",
+      "fillOpacity": 0.80,
+      "lineWidth": 3,
+      "lineDasharray": [2, 2],
+      "pattern": "membrane-texture-arruinada",
+      "threatLevel": 3,
+      "color": "#FF6347"
+    },
+    "rompida": {
+      "label": "Rompida",
+      "description": "Membrana totalmente colapsada, sem proteção, perigo iminente",
+      "fillOpacity": 0.95,
+      "lineWidth": 3.5,
+      "lineDasharray": [1, 2],
+      "pattern": "membrane-texture-rompida",
+      "threatLevel": 4,
+      "color": "#FF0000"
+    }
+  },
+  "canvasSize": 256,
+  "baseColor": "#ffffff",
+  "imageSource": "media/textura/membrana.png",
+  "metadata": {
+    "version": "1.0",
+    "lastUpdated": "2026-02-23",
+    "description": "Configuração centralizada para estados de membrana paranormal"
+  }
+}

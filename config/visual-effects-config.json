@@ -1,0 +1,108 @@
+{
+  "crteffects": {
+    "scanlines": {
+      "enabled": true,
+      "opacity": 0.15,
+      "frequency": "high",
+      "pattern": "horizontal",
+      "color": "rgba(0, 0, 0, 0.15)"
+    },
+    "flicker": {
+      "enabled": true,
+      "intensity": 0.05,
+      "frequency": 0.1,
+      "duration": 100
+    },
+    "phosphor": {
+      "enabled": true,
+      "glow": "rgba(0, 255, 0, 0.2)",
+      "blurRadius": 2
+    },
+    "vingnette": {
+      "enabled": true,
+      "darkness": 0.3,
+      "radius": 0.8
+    },
+    "curvature": {
+      "enabled": false,
+      "intensity": 0.02
+    }
+  },
+  "gloweffects": {
+    "membraneGlow": {
+      "enabled": true,
+      "blur": 10,
+      "spread": 2,
+      "opacity": 0.6,
+      "color": "currentStateColor"
+    },
+    "markerGlow": {
+      "enabled": true,
+      "blur": 8,
+      "spread": 1,
+      "opacity": 0.5,
+      "color": "markerColor"
+    },
+    "connectionGlow": {
+      "enabled": false,
+      "blur": 4,
+      "spread": 1,
+      "opacity": 0.3
+    },
+    "hoverGlow": {
+      "enabled": true,
+      "intensity": 1.5,
+      "duration": 200
+    }
+  },
+  "animations": {
+    "transitionDuration": 300,
+    "markerPulse": {
+      "enabled": true,
+      "duration": 2000,
+      "amplitude": 1.1
+    },
+    "zoneAppear": {
+      "enabled": true,
+      "duration": 500,
+      "type": "fadeIn"
+    },
+    "connectionDraw": {
+      "enabled": true,
+      "duration": 1000,
+      "type": "strokeDashoffset"
+    }
+  },
+  "darkmode": {
+    "enabled": true,
+    "theme": "deep-space",
+    "backgroundColor": "#0a0a0a",
+    "textColor": "#00ff00",
+    "accentColor": "#00ff88",
+    "gridLines": {
+      "enabled": false,
+      "color": "rgba(0, 255, 0, 0.1)",
+      "spacing": 50
+    }
+  },
+  "accessibility": {
+    "highContrast": {
+      "enabled": false,
+      "multiplier": 1.5
+    },
+    "reducedMotion": {
+      "enabled": false,
+      "disableAnimations": false,
+      "disableGlows": false
+    },
+    "colorblindMode": {
+      "enabled": false,
+      "type": "deuteranopia"
+    }
+  },
+  "metadata": {
+    "version": "1.0",
+    "lastUpdated": "2026-02-23",
+    "description": "Configurações de efeitos visuais CRT retro e animações do sistema"
+  }
+}

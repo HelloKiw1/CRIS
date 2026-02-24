@@ -1,0 +1,72 @@
+{
+  "mapLayers": {
+    "base": {
+      "id": "map-tiles",
+      "type": "raster",
+      "visible": true,
+      "opacity": 1,
+      "description": "Mapa base de satélite/mapa padrão"
+    },
+    "markers": {
+      "id": "location-markers",
+      "type": "circle",
+      "visible": true,
+      "opacity": 1,
+      "description": "Marcadores de localizações"
+    },
+    "zones": {
+      "id": "membrane-zones",
+      "type": "fill",
+      "visible": true,
+      "opacity": 1,
+      "description": "Zonas de membrana paranormal"
+    },
+    "connections": {
+      "id": "paranormal-connections",
+      "type": "line",
+      "visible": true,
+      "opacity": 0.8,
+      "description": "Linhas de conexão entre locais"
+    },
+    "heatmap": {
+      "id": "activity-heatmap",
+      "type": "heatmap",
+      "visible": false,
+      "opacity": 0.6,
+      "description": "Mapa de calor da atividade paranormal"
+    }
+  },
+  "analysis": {
+    "threatCalculation": {
+      "method": "weighted_average",
+      "weightFactors": {
+        "membraneState": 0.4,
+        "markerType": 0.3,
+        "connectionDensity": 0.2,
+        "historicalData": 0.1
+      }
+    },
+    "membraneDecay": {
+      "enabled": true,
+      "decayRatePerDay": 0.05,
+      "minOpacity": 0.3
+    },
+    "clusteringRadius": 1000,
+    "heatmapRadius": 500,
+    "heatmapIntensity": {
+      "low": 0.2,
+      "medium": 0.5,
+      "high": 0.9
+    }
+  },
+  "export": {
+    "formats": ["geojson", "json", "csv"],
+    "includedData": ["locations", "zones", "connections", "metadata"],
+    "defaultFilename": "CRIS-export-{timestamp}"
+  },
+  "metadata": {
+    "version": "1.0",
+    "lastUpdated": "2026-02-23",
+    "description": "Configurações de camadas do mapa, análise de dados paranormais e exportação"
+  }
+}

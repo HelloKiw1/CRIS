@@ -1,0 +1,41 @@
+{
+  "map": {
+    "style": "https://tiles.stadiamaps.com/styles/alidade_smooth_dark.json",
+    "initialCenter": {
+      "lat": -10.183549216947497,
+      "lng": -48.34577353930342
+    },
+    "initialZoom": 14,
+    "minZoom": 10,
+    "maxZoom": 18
+  },
+  "storage": {
+    "locationsKey": "crisLocations",
+    "defaultEditsKey": "crisDefaultEdits",
+    "zonesKey": "crisZones",
+    "customLocationsKey": "paranormalLocations"
+  },
+  "ui": {
+    "font": "VT323",
+    "fontFallback": "Courier New, monospace",
+    "fontSize": {
+      "popup": 18,
+      "info": 15,
+      "legend": 12
+    },
+    "popupOffset": 25,
+    "notificationDuration": 3000
+  },
+  "performance": {
+    "maxMarkers": 500,
+    "maxConnections": 100,
+    "maxZones": 50,
+    "renderDistance": 5000
+  },
+  "metadata": {
+    "version": "1.0",
+    "lastUpdated": "2026-02-23",
+    "name": "C.R.I.S. - Central de Rastreamento e Investigação de Sinais",
+    "description": "Sistema de investigação paranormal com interface CRT retrô"
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "globalShortcuts": {
+    "map": {
+      "zoomIn": {
+        "keys": ["Control", "+"],
+        "description": "Aproximar mapa"
+      },
+      "zoomOut": {
+        "keys": ["Control", "-"],
+        "description": "Afastar mapa"
+      },
+      "resetView": {
+        "keys": ["Control", "0"],
+        "description": "Resetar visualização para padrão"
+      },
+      "toggleLayers": {
+        "keys": ["Control", "L"],
+        "description": "Alternar visibilidade de camadas"
+      }
+    },
+    "edit": {
+      "newLocation": {
+        "keys": ["Control", "N"],
+        "description": "Criar nova localização"
+      },
+      "deleteSelected": {
+        "keys": ["Delete"],
+        "description": "Deletar seleção atual"
+      },
+      "undo": {
+        "keys": ["Control", "Z"],
+        "description": "Desfazer última ação"
+      },
+      "redo": {
+        "keys": ["Control", "Y"],
+        "description": "Refazer última ação"
+      }
+    },
+    "analysis": {
+      "showHeatmap": {
+        "keys": ["Control", "H"],
+        "description": "Mostrar mapa de calor"
+      },
+      "showConnections": {
+        "keys": ["Control", "C"],
+        "description": "Mostrar conexões paranormais"
+      },
+      "calculateThreat": {
+        "keys": ["Control", "T"],
+        "description": "Calcular nível de ameaça"
+      }
+    },
+    "system": {
+      "help": {
+        "keys": ["F1"],
+        "description": "Mostrar ajuda do sistema"
+      },
+      "settings": {
+        "keys": ["Control", "S"],
+        "description": "Abrir configurações"
+      },
+      "export": {
+        "keys": ["Control", "E"],
+        "description": "Exportar dados"
+      },
+      "import": {
+        "keys": ["Control", "I"],
+        "description": "Importar dados"
+      }
+    }
+  },
+  "mouseShortcuts": {
+    "singleClick": "Selecionar elemento",
+    "doubleClick": "Editar elemento",
+    "rightClick": "Menu de contexto",
+    "drag": "Mover elemento/Panoramizar mapa",
+    "scrollWheel": "Zoom mapa",
+    "ctrlClick": "Seleção múltipla",
+    "shiftClick": "Seleção por intervalo"
+  },
+  "metadata": {
+    "version": "1.0",
+    "lastUpdated": "2026-02-23",
+    "description": "Mapeamento de atalhos de teclado e mouse do sistema"
+  }
+}

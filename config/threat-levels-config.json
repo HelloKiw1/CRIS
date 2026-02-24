@@ -1,0 +1,36 @@
+{
+  "threatLevels": {
+    "1": {
+      "label": "Baixo",
+      "color": "#00FF00",
+      "textColor": "#00FF00",
+      "glowColor": "rgba(0, 255, 0, 0.6)",
+      "cssClass": "threat-low",
+      "emoji": "✅",
+      "description": "Situação sob controle"
+    },
+    "2": {
+      "label": "Médio",
+      "color": "#FFFF00",
+      "textColor": "#FFFF00",
+      "glowColor": "rgba(255, 255, 0, 0.6)",
+      "cssClass": "threat-medium",
+      "emoji": "⚠️",
+      "description": "Situação monitorada"
+    },
+    "3": {
+      "label": "Alto",
+      "color": "#FF0000",
+      "textColor": "#FF0000",
+      "glowColor": "rgba(255, 0, 0, 0.6)",
+      "cssClass": "threat-high",
+      "emoji": "🚨",
+      "description": "Situação crítica"
+    }
+  },
+  "metadata": {
+    "version": "1.0",
+    "lastUpdated": "2026-02-23",
+    "description": "Níveis de ameaça paranormal com correspondentes visuais"
+  }
+}

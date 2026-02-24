@@ -1,0 +1,40 @@
+{
+  "colors": {
+    "primary": {
+      "crt_terminal": "#00FF00",
+      "crt_terminal_dark": "#00AA00",
+      "crt_border": "#00FF00",
+      "crt_glow": "rgba(0, 255, 0, 0.5)"
+    },
+    "status": {
+      "success": "#00FF00",
+      "warning": "#FFFF00",
+      "error": "#FF0000",
+      "info": "#4169E1"
+    },
+    "membrane": {
+      "base": "#ffffff",
+      "intacta": "#00FF00",
+      "estavel": "#FFFF00",
+      "danificada": "#FFA500",
+      "arruinada": "#FF6347",
+      "rompida": "#FF0000"
+    },
+    "background": {
+      "dark": "#000000",
+      "terminal": "#0a0a0a",
+      "overlay": "rgba(0, 0, 0, 0.95)"
+    },
+    "effects": {
+      "scanlines": "rgba(0, 255, 0, 0.01)",
+      "flicker": "rgba(0, 255, 0, 0.03)",
+      "shadow": "0 0 10px rgba(0, 255, 0, 0.5)"
+    }
+  },
+  "metadata": {
+    "version": "1.0",
+    "lastUpdated": "2026-02-23",
+    "description": "Paleta de cores de tema CRT retro paranormal",
+    "theme": "crt-paranormal"
+  }
+}

@@ -1,0 +1,132 @@
+{
+  "pt_BR": {
+    "ui": {
+      "title": "C.R.I.S.",
+      "subtitle": "Central de Rastreamento e Investigação de Sinais",
+      "menu": {
+        "locations": "Localizações",
+        "zones": "Zonas",
+        "connections": "Conexões",
+        "analysis": "Análise",
+        "settings": "Configurações"
+      }
+    },
+    "membranes": {
+      "intacta": {
+        "title": "Intacta",
+        "description": "Membrana paranormal perfeitamente preservada"
+      },
+      "estavel": {
+        "title": "Estável",
+        "description": "Membrana em condição estável com pequenas deteriorações"
+      },
+      "danificada": {
+        "title": "Danificada",
+        "description": "Membrana com danos significativos na estrutura"
+      },
+      "arruinada": {
+        "title": "Arruinada",
+        "description": "Membrana severamente comprometida"
+      },
+      "rompida": {
+        "title": "Rompida",
+        "description": "Membrana completamente destruída ou dissolvida"
+      }
+    },
+    "markers": {
+      "base": {
+        "title": "Base de Operações",
+        "tooltip": "Clique para editar"
+      },
+      "casa": {
+        "title": "Casa - Agente",
+        "tooltip": "Residência do investigador"
+      },
+      "loja": {
+        "title": "Loja",
+        "tooltip": "Local comercial com atividade"
+      },
+      "paranormal": {
+        "title": "Evento Paranormal",
+        "tooltip": "Manifestação registrada"
+      }
+    },
+    "connections": {
+      "investigacao_ativa": {
+        "title": "Investigação Ativa",
+        "description": "Local sendo investigado ativamente"
+      },
+      "monitoramento": {
+        "title": "Monitoramento",
+        "description": "Local em observação contínua"
+      },
+      "fonte_informacao": {
+        "title": "Fonte de Informação",
+        "description": "Informações coletadas deste local"
+      },
+      "possivel_relacao": {
+        "title": "Possível Relação",
+        "description": "Conexão paranormal suspeita"
+      }
+    },
+    "threats": {
+      "1": {
+        "label": "Ameaça Baixa",
+        "description": "Mínima atividade paranormal detectada"
+      },
+      "2": {
+        "label": "Ameaça Média",
+        "description": "Atividade paranormal moderada"
+      },
+      "3": {
+        "label": "Ameaça Alta",
+        "description": "Intensa atividade paranormal - cautela máxima"
+      }
+    },
+    "notifications": {
+      "locationAdded": "Nova localização adicionada",
+      "locationRemoved": "Localização removida",
+      "zoneCreated": "Zona de membrana criada",
+      "connectionCreated": "Conexão paranormal estabelecida",
+      "dataLoaded": "Dados carregados com sucesso",
+      "dataSaved": "Dados salvos localmente",
+      "error": "Erro na operação",
+      "confirming": "Confirme a ação..."
+    }
+  },
+  "en_US": {
+    "ui": {
+      "title": "C.R.I.S.",
+      "subtitle": "Central Tracking and Signal Investigation",
+      "menu": {
+        "locations": "Locations",
+        "zones": "Zones",
+        "connections": "Connections",
+        "analysis": "Analysis",
+        "settings": "Settings"
+      }
+    },
+    "membranes": {
+      "intacta": {
+        "title": "Intact",
+        "description": "Perfectly preserved paranormal membrane"
+      },
+      "estavel": {
+        "title": "Stable",
+        "description": "Membrane in stable condition with minor deterioration"
+      },
+      "danificada": {
+        "title": "Damaged",
+        "description": "Membrane with significant structural damage"
+      },
+      "arruinada": {
+        "title": "Ruined",
+        "description": "Severely compromised membrane"
+      },
+      "rompida": {
+        "title": "Ruptured",
+        "description": "Completely destroyed or dissolved membrane"
+      }
+    }
+  }
+}

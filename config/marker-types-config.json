@@ -1,0 +1,45 @@
+{
+  "markerTypes": {
+    "base": {
+      "label": "Base de Operações",
+      "description": "Unidades da Ordem Realitas",
+      "icon": "media/icons/pin/icon_base.png",
+      "color": "#00FF00",
+      "scale": 1.2,
+      "glowColor": "#00FF00",
+      "threatLevel": 0
+    },
+    "casa": {
+      "label": "Casa - Agente",
+      "description": "Residências de agentes",
+      "icon": "media/icons/pin/icon_casa.png",
+      "color": "#4169E1",
+      "scale": 1.0,
+      "glowColor": "#4169E1",
+      "threatLevel": 0
+    },
+    "loja": {
+      "label": "Loja/Contato",
+      "description": "Pontos de suporte e informação",
+      "icon": "media/icons/pin/icon_Loja.png",
+      "color": "#FFD700",
+      "scale": 1.0,
+      "glowColor": "#FFD700",
+      "threatLevel": 1
+    },
+    "paranormal": {
+      "label": "Manifestação Paranormal",
+      "description": "Registro do Paranormal",
+      "icon": "media/icons/pin/Icon_paranormal.png",
+      "color": "#FF6347",
+      "scale": 1.1,
+      "glowColor": "#FF6347",
+      "threatLevel": 2
+    }
+  },
+  "metadata": {
+    "version": "1.0",
+    "lastUpdated": "2026-02-23",
+    "description": "Configuração de tipos de marcadores e suas propriedades visuais"
+  }
+}
